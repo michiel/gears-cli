@@ -1,0 +1,28 @@
+name: gears-cli
+version: "0.1.0"
+author: Michiel Kalkman <michiel@nosuchtype.com>
+about: Does awesome things
+args:
+    - config:
+        short: c
+        long: config
+        value_name: FILE
+        help: Sets a custom config file
+        takes_value: true
+    - verbose:
+        short: v
+        multiple: true
+        help: Sets the level of verbosity
+subcommands:
+    - new:
+        about: Setup a new project
+        args:
+            - debug:
+                short: d
+                help: print debug information
+    - export-json:
+        about: Export an existing project to JSON
+    - import-json:
+        about: Import an existing project from JSON
+    - generate:
+        about: Generate project artifacts

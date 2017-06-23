@@ -1,0 +1,16 @@
+[package]
+name = "gears-cli"
+version = "0.1.0"
+authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
+
+[dependencies]
+xflow = "0.1.1"
+
+[dependencies.clap]
+version = "~2.25.0"
+default-features = false
+features = [ "suggestions", "color", "yaml", "wrap_help" ]
+
+[replace]
+"xflow:0.1.1" = { path = "/home/michiel/dev/github/xflow-rust" }
+
