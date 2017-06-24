@@ -9,6 +9,12 @@ args:
         value_name: FILE
         help: Sets a custom config file
         takes_value: true
+    - path:
+        short: p
+        long: path
+        value_name: PATH
+        help: Sets a project path
+        takes_value: true
     - verbose:
         short: v
         multiple: true
@@ -26,3 +32,5 @@ subcommands:
         about: Import an existing project from JSON
     - generate:
         about: Generate project artifacts
+    - validate:
+        about: Validate project structure
