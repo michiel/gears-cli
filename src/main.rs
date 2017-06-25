@@ -1,40 +1,114 @@
 extern crate xflow;
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate clap;
-use clap::App;
+use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
+extern crate env_logger;
 
 fn load_model(path: &str) -> xflow::structure::model::ModelDocument {
     let model = xflow::util::fs::model_from_fs(path).unwrap();
     model
 }
 
+enum Format {
+    JSON,
+    YAML,
+}
+
 fn main() {
-    let yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
+    let _ = env_logger::init();
+
+    let matches = App::new("gears-cli")
+        .version("0.1.0")
+        .author("Michiel Kalkman <michiel@nosuchtype.com")
+        .about("Does awesome things")
+        .arg(Arg::with_name("config")
+                 .short("c")
+                 .long("config")
+                 .value_name("FILE")
+                 .help("Sets a custom config file")
+                 .takes_value(true))
+        .arg(Arg::with_name("path")
+                 .short("p")
+                 .long("path")
+                 .value_name("path")
+                 .help("Sets a project path")
+                 .takes_value(true))
+        .arg(Arg::with_name("input_format")
+                 .long("input-format")
+                 .value_name("input_format")
+                 .help("Sets the input format")
+                 .takes_value(true))
+        .arg(Arg::with_name("output_format")
+                 .long("output-format")
+                 .value_name("output_format")
+                 .help("Sets the output format")
+                 .takes_value(true))
+        .arg(Arg::with_name("v")
+                 .short("v")
+                 .multiple(true)
+                 .help("Sets the level of verbosity"))
+        .subcommand(SubCommand::with_name("init")
+                        .about("Initialize a new project")
+                        .arg(Arg::with_name("dir")
+                                 .short("d")
+                                 .help("Project directory and name")))
+        .subcommand(SubCommand::with_name("export").about("Export an existing project"))
+        .subcommand(SubCommand::with_name("import").about("Import an existing project"))
+        .subcommand(SubCommand::with_name("generate").about("Generate project artifacts"))
+        .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
+        .get_matches();
+
 
     let config = matches.value_of("config").unwrap_or("project.conf");
     let path = matches.value_of("path").unwrap_or(".");
+
+    let input_format = if matches.value_of("input_format").unwrap_or("json") == "yaml" {
+        Format::YAML
+    } else {
+        Format::JSON
+    };
+
+    let output_format = if matches.value_of("output_format").unwrap_or("json") == "yaml" {
+        Format::YAML
+    } else {
+        Format::JSON
+    };
 
     if let Some(matches) = matches.subcommand_matches("init") {
         xflow::util::fs::init_new_model_dir(path);
     }
 
-    if let Some(matches) = matches.subcommand_matches("export-json") {
+    if let Some(matches) = matches.subcommand_matches("export") {
         let model = xflow::util::fs::model_from_fs(&path).unwrap();
-        println!("{}", model.to_json());
+        let res = match output_format {
+            Format::YAML => model.to_yaml(),
+            Format::JSON => model.to_json(),
+        };
+
+        println!("{}", res);
     }
 
-    if let Some(matches) = matches.subcommand_matches("import-json") {
+    if let Some(matches) = matches.subcommand_matches("import") {
 
         let mut buffer = String::new();
         let stdin = io::stdin();
         let mut handle = stdin.lock();
 
         handle.read_to_string(&mut buffer).unwrap();
-        let model = xflow::structure::model::ModelDocument::from_json(&buffer);
 
-        println!("{}", model.to_json());
+        let model = match input_format {
+            Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
+            Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
+        };
+
+        match input_format {
+            Format::YAML => println!("{}", model.to_yaml()),
+            Format::JSON => println!("{}", model.to_json()),
+        }
+
     }
 
     if let Some(matches) = matches.subcommand_matches("validate") {

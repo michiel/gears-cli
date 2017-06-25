@@ -5,11 +5,13 @@ authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 
 [dependencies]
 xflow = "0.1.1"
+log = "0.3"
+env_logger = "0.4"
 
 [dependencies.clap]
 version = "~2.25.0"
 default-features = false
-features = [ "suggestions", "color", "yaml", "wrap_help" ]
+features = [ "suggestions", "color", "wrap_help" ]
 
 [replace]
 "xflow:0.1.1" = { path = "/home/michiel/dev/github/xflow-rust" }
