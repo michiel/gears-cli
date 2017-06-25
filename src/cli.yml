@@ -20,12 +20,12 @@ args:
         multiple: true
         help: Sets the level of verbosity
 subcommands:
-    - new:
-        about: Setup a new project
+    - init:
+        about: Initialize a new project
         args:
-            - debug:
+            - dir:
                 short: d
-                help: print debug information
+                help: Project directory and name
     - export-json:
         about: Export an existing project to JSON
     - import-json:

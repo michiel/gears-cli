@@ -16,12 +16,8 @@ fn main() {
     let config = matches.value_of("config").unwrap_or("project.conf");
     let path = matches.value_of("path").unwrap_or(".");
 
-    if let Some(matches) = matches.subcommand_matches("new") {
-        if matches.is_present("debug") {
-            println!("new : Printing debug info...");
-        } else {
-            println!("new : Printing normally...");
-        }
+    if let Some(matches) = matches.subcommand_matches("init") {
+        xflow::util::fs::init_new_model_dir(path);
     }
 
     if let Some(matches) = matches.subcommand_matches("export-json") {
@@ -71,6 +67,5 @@ fn main() {
 
         println!("{:?}", forms_html);
     }
-
 
 }
