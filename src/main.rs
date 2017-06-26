@@ -57,6 +57,7 @@ fn main() {
                                  .help("Project directory and name")))
         .subcommand(SubCommand::with_name("export").about("Export an existing project"))
         .subcommand(SubCommand::with_name("import").about("Import an existing project"))
+        .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
         .subcommand(SubCommand::with_name("generate").about("Generate project artifacts"))
         .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
         .get_matches();
@@ -82,64 +83,98 @@ fn main() {
     }
 
     if let Some(matches) = matches.subcommand_matches("export") {
-        let model = xflow::util::fs::model_from_fs(&path).unwrap();
-        let res = match output_format {
-            Format::YAML => model.to_yaml(),
-            Format::JSON => model.to_json(),
-        };
-
-        println!("{}", res);
+        subcommand_export(&path, &output_format);
     }
 
     if let Some(matches) = matches.subcommand_matches("import") {
+        subcommand_import(&path, &input_format);
+    }
 
-        let mut buffer = String::new();
-        let stdin = io::stdin();
-        let mut handle = stdin.lock();
-
-        handle.read_to_string(&mut buffer).unwrap();
-
-        let model = match input_format {
-            Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
-            Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
-        };
-
-        match input_format {
-            Format::YAML => println!("{}", model.to_yaml()),
-            Format::JSON => println!("{}", model.to_json()),
-        }
-
+    if let Some(matches) = matches.subcommand_matches("transform") {
+        subcommand_transform(&input_format, &output_format);
     }
 
     if let Some(matches) = matches.subcommand_matches("validate") {
-
-        let model = load_model(path);
-        let path_sep = "/".to_owned();
-        for xflow in &model.doc.xflows {
-            let errors = xflow::validation::xflow::Validation::validate(&xflow);
-            if errors.len() > 0 {
-                for error in &errors {
-                    println!("XFlow '{}' : Error '{}' - Path '{}'",
-                             xflow.id,
-                             error.message,
-                             error.paths.join(&path_sep));
-                }
-            } else {
-                println!("XFlow '{}' validates OK", xflow.id);
-            }
-        }
+        subcommand_validate(&path);
     }
 
     if let Some(matches) = matches.subcommand_matches("generate") {
-        let model = load_model(path);
+        subcommand_generate(&path);
+    }
 
-        let mut forms_html = Vec::<String>::new();
+}
 
-        for form in &model.doc.forms {
-            forms_html.push(xflow::generation::vue_form::output_html(&form));
+fn subcommand_validate(path: &str) -> () {
+    let model = load_model(path);
+    let path_sep = "/".to_owned();
+    for xflow in &model.doc.xflows {
+        let errors = xflow::validation::xflow::Validation::validate(&xflow);
+        if errors.len() > 0 {
+            for error in &errors {
+                println!("XFlow '{}' : Error '{}' - Path '{}'",
+                         xflow.id,
+                         error.message,
+                         error.paths.join(&path_sep));
+            }
+        } else {
+            println!("XFlow '{}' validates OK", xflow.id);
         }
+    }
+}
 
-        println!("{:?}", forms_html);
+fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+
+    handle.read_to_string(&mut buffer).unwrap();
+
+    let model = match input_format {
+        &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
+        &Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
+    };
+
+    match output_format {
+        &Format::YAML => println!("{}", model.to_yaml()),
+        &Format::JSON => println!("{}", model.to_json()),
+    }
+}
+
+fn subcommand_generate(path: &str) -> () {
+    let model = load_model(path);
+
+    let mut forms_html = Vec::<String>::new();
+
+    for form in &model.doc.forms {
+        forms_html.push(xflow::generation::vue_form::output_html(&form));
+    }
+
+    println!("{:?}", forms_html);
+}
+
+fn subcommand_import(path: &str, input_format: &Format) -> () {
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+
+    handle.read_to_string(&mut buffer).unwrap();
+
+    let model = match input_format {
+        &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
+        &Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
+    };
+
+    let _ = xflow::util::fs::model_to_fs(&model, &path).unwrap();
+
+}
+
+fn subcommand_export(path: &str, output_format: &Format) -> () {
+
+    let model = xflow::util::fs::model_from_fs(&path).unwrap();
+
+    match output_format {
+        &Format::YAML => println!("{}", model.to_yaml()),
+        &Format::JSON => println!("{}", model.to_json()),
     }
 
 }
