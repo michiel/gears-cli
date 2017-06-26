@@ -12,6 +12,15 @@ fn load_model(path: &str) -> xflow::structure::model::ModelDocument {
     model
 }
 
+fn read_stdin() -> String {
+    let mut buffer = String::new();
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
+
+    handle.read_to_string(&mut buffer).unwrap();
+    buffer
+}
+
 enum Format {
     JSON,
     YAML,
@@ -78,30 +87,21 @@ fn main() {
         Format::JSON
     };
 
-    if let Some(matches) = matches.subcommand_matches("init") {
-        xflow::util::fs::init_new_model_dir(path);
+    match matches.subcommand_name() {
+        Some("init") => subcommand_init(&path),
+        Some("export") => subcommand_export(&path, &output_format),
+        Some("import") => subcommand_import(&path, &input_format),
+        Some("transform") => subcommand_transform(&input_format, &output_format),
+        Some("validate") => subcommand_validate(&path),
+        Some("generate") => subcommand_generate(&path),
+        None => println!("No subcommand was used"),
+        _ => println!("Some other subcommand was used"),
     }
 
-    if let Some(matches) = matches.subcommand_matches("export") {
-        subcommand_export(&path, &output_format);
-    }
+}
 
-    if let Some(matches) = matches.subcommand_matches("import") {
-        subcommand_import(&path, &input_format);
-    }
-
-    if let Some(matches) = matches.subcommand_matches("transform") {
-        subcommand_transform(&input_format, &output_format);
-    }
-
-    if let Some(matches) = matches.subcommand_matches("validate") {
-        subcommand_validate(&path);
-    }
-
-    if let Some(matches) = matches.subcommand_matches("generate") {
-        subcommand_generate(&path);
-    }
-
+fn subcommand_init(path: &str) -> () {
+    xflow::util::fs::init_new_model_dir(path);
 }
 
 fn subcommand_validate(path: &str) -> () {
@@ -123,11 +123,7 @@ fn subcommand_validate(path: &str) -> () {
 }
 
 fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-
-    handle.read_to_string(&mut buffer).unwrap();
+    let buffer = read_stdin();
 
     let model = match input_format {
         &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
@@ -153,11 +149,7 @@ fn subcommand_generate(path: &str) -> () {
 }
 
 fn subcommand_import(path: &str, input_format: &Format) -> () {
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-
-    handle.read_to_string(&mut buffer).unwrap();
+    let buffer = read_stdin();
 
     let model = match input_format {
         &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
