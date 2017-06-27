@@ -67,7 +67,7 @@ fn main() {
         .subcommand(SubCommand::with_name("export").about("Export an existing project"))
         .subcommand(SubCommand::with_name("import").about("Import an existing project"))
         .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
-        .subcommand(SubCommand::with_name("generate").about("Generate project artifacts"))
+        .subcommand(SubCommand::with_name("build").about("Build project artifacts"))
         .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
         .get_matches();
 
@@ -93,7 +93,7 @@ fn main() {
         Some("import") => subcommand_import(&path, &input_format),
         Some("transform") => subcommand_transform(&input_format, &output_format),
         Some("validate") => subcommand_validate(&path),
-        Some("generate") => subcommand_generate(&path),
+        Some("build") => subcommand_build(&path),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
@@ -136,7 +136,7 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
     }
 }
 
-fn subcommand_generate(path: &str) -> () {
+fn subcommand_build(path: &str) -> () {
     let model = load_model(path);
 
     let mut forms_html = Vec::<String>::new();
