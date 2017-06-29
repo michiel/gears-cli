@@ -1,7 +1,6 @@
 extern crate xflow;
 #[macro_use]
 extern crate log;
-#[macro_use]
 extern crate clap;
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
@@ -139,13 +138,13 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
 fn subcommand_build(path: &str) -> () {
     let model = load_model(path);
 
-    let mut forms_html = Vec::<String>::new();
+    let mut pages_html = Vec::<String>::new();
 
-    for form in &model.doc.forms {
-        forms_html.push(xflow::generation::vue_form::output_html(&form));
+    for page in &model.doc.pages {
+        pages_html.push(xflow::generation::vue_form::output_html(&page));
     }
 
-    println!("{:?}", forms_html);
+    println!("{:?}", pages_html);
 }
 
 fn subcommand_import(path: &str, input_format: &Format) -> () {
