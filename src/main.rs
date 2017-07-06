@@ -44,6 +44,12 @@ fn main() {
                  .value_name("path")
                  .help("Sets a project path")
                  .takes_value(true))
+        .arg(Arg::with_name("locale")
+                 .short("l")
+                 .long("locale")
+                 .value_name("locale")
+                 .help("Set the project locale")
+                 .takes_value(true))
         .arg(Arg::with_name("input_format")
                  .long("input-format")
                  .value_name("input_format")
@@ -86,13 +92,15 @@ fn main() {
         Format::JSON
     };
 
+    let locale = matches.value_of("locale").unwrap_or("en_US");
+
     match matches.subcommand_name() {
         Some("init") => subcommand_init(&path),
         Some("export") => subcommand_export(&path, &output_format),
         Some("import") => subcommand_import(&path, &input_format),
         Some("transform") => subcommand_transform(&input_format, &output_format),
         Some("validate") => subcommand_validate(&path),
-        Some("build") => subcommand_build(&path),
+        Some("build") => subcommand_build(&path, &locale),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
@@ -135,13 +143,13 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
     }
 }
 
-fn subcommand_build(path: &str) -> () {
-    let model = load_model(path);
+fn subcommand_build(path: &str, locale: &str) -> () {
+    let model = load_model(path).as_locale(locale).unwrap();
 
     let mut pages_html = Vec::<String>::new();
 
     for page in &model.doc.pages {
-        pages_html.push(xflow::generation::vue_form::output_html(&page));
+        pages_html.push(xflow::generation::page_to_react_component::output_html(&page));
     }
 
     println!("{:?}", pages_html);
