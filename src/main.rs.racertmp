@@ -116,18 +116,19 @@ fn subcommand_init(path: &str) -> () {
 
 fn subcommand_validate(path: &str) -> () {
     let model = load_model(path);
-    let path_sep = ";".to_owned();
-    let errors = xflow::validation::common::validate_model(&model);
-
-    if errors.len() > 0 {
-        for error in &errors {
-            println!("Error '{}' : Error '{}' - Path '{}'",
-                     error.code,
-                     error.message,
-                     error.paths.join(&path_sep));
+    let path_sep = "/".to_owned();
+    for xflow in &model.doc.xflows {
+        let errors = xflow::validation::xflow::Validation::validate(&xflow);
+        if errors.len() > 0 {
+            for error in &errors {
+                println!("XFlow '{}' : Error '{}' - Path '{}'",
+                         xflow.id,
+                         error.message,
+                         error.paths.join(&path_sep));
+            }
+        } else {
+            println!("XFlow '{}' validates OK", xflow.id);
         }
-    } else {
-        println!("Model '{}' validates OK", model.id);
     }
 }
 
@@ -146,14 +147,24 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
 }
 
 fn subcommand_build(path: &str, locale: &str) -> () {
-    let mut model = load_model(path);
-    model.pad_all_translations();
-    let model_locale = model.as_locale(&locale).unwrap();
+    let model = load_model(path).as_locale(&locale).unwrap();
+    model.pad
 
     let mut pages_html = Vec::<String>::new();
 
-    for page in &model_locale.doc.pages {
-        pages_html.push(xflow::generation::page_to_react_component::output_html(&page));
+    for page in &model.doc.pages {
+        println!("");
+        println!("");
+        println!("");
+        println!("XXX PAGE {:?}", page);
+        let out = xflow::generation::page_to_react_component::output_html(&page);
+        println!("XXX PAGE OUT {:?}", out);
+        println!("");
+        println!("");
+        println!("");
+        println!("");
+        println!("");
+        pages_html.push(out);
     }
 
     println!("{:?}", pages_html);
