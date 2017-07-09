@@ -150,13 +150,17 @@ fn subcommand_build(path: &str, locale: &str) -> () {
     model.pad_all_translations();
     let model_locale = model.as_locale(&locale).unwrap();
 
-    let mut pages_html = Vec::<String>::new();
+    let mut output = Vec::<String>::new();
 
     for page in &model_locale.doc.pages {
-        pages_html.push(xflow::generation::page_to_react_component::output_html(&page));
+        output.push(xflow::generation::page_to_react_component::output_html(&page));
     }
 
-    println!("{:?}", pages_html);
+    for xflow in &model_locale.doc.xflows {
+        output.push(xflow::generation::xflow_to_es5::output(&xflow));
+    }
+
+    println!("{:?}", output);
 }
 
 fn subcommand_import(path: &str, input_format: &Format, locale: &str) -> () {
