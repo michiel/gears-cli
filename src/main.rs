@@ -55,6 +55,11 @@ fn main() {
                  .value_name("input_format")
                  .help("Sets the input format")
                  .takes_value(true))
+        .arg(Arg::with_name("output_path")
+                 .long("output-path")
+                 .value_name("output_path")
+                 .help("Sets the output path")
+                 .takes_value(true))
         .arg(Arg::with_name("output_format")
                  .long("output-format")
                  .value_name("output_format")
@@ -81,6 +86,7 @@ fn main() {
 
     let config = matches.value_of("config").unwrap_or("project.conf");
     let path = matches.value_of("path").unwrap_or(".");
+    let output_path = matches.value_of("output_path").unwrap_or("/tmp/x5");
 
     let input_format = if matches.value_of("input_format").unwrap_or("json") == "yaml" {
         Format::YAML
@@ -102,7 +108,7 @@ fn main() {
         Some("import") => subcommand_import(&path, &input_format, &locale),
         Some("transform") => subcommand_transform(&input_format, &output_format),
         Some("validate") => subcommand_validate(&path),
-        Some("build") => subcommand_build(&path, &locale),
+        Some("build") => subcommand_build(&path, &locale, &output_path),
         Some("generate-translation") => subcommand_generate_translation(&path, &locale),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
@@ -145,22 +151,13 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
     }
 }
 
-fn subcommand_build(path: &str, locale: &str) -> () {
+fn subcommand_build(path: &str, locale: &str, output_path: &str) -> () {
     let mut model = load_model(path);
     model.pad_all_translations();
     let model_locale = model.as_locale(&locale).unwrap();
 
-    let mut output = Vec::<String>::new();
+    xflow::util::fs::build_to_react_app(&model, &output_path);
 
-    for page in &model_locale.doc.pages {
-        output.push(xflow::generation::page_to_react_component::output_html(&page));
-    }
-
-    for xflow in &model_locale.doc.xflows {
-        output.push(xflow::generation::xflow_to_es5::output(&xflow));
-    }
-
-    println!("{:?}", output);
 }
 
 fn subcommand_import(path: &str, input_format: &Format, locale: &str) -> () {
