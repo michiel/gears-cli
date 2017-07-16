@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 
 [dependencies]
-xflow = "0.1.1"
+gears = "0.1.1"
 log = "0.3"
 env_logger = "0.4"
 
@@ -14,7 +14,7 @@ default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
 
 [replace]
-# "xflow:0.1.1" = { path = "/home/michiel/dev/github/xflow-rust" }
-"xflow:0.1.1" = { git = 'https://github.com/michiel/xflow-rust' }
+"gears:0.1.1" = { path = "/home/michiel/dev/github/gears-core-rust" }
+# "gears:0.1.1" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
 
