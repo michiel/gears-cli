@@ -20,9 +20,19 @@ fn read_stdin() -> String {
     buffer
 }
 
+#[derive(Clone)]
 enum Format {
     JSON,
     YAML,
+}
+
+struct AppState {
+    locale: String,
+    path_config: String,
+    path_in: String,
+    path_out: String,
+    format_in: Format,
+    format_out: Format,
 }
 
 fn main() {
@@ -44,6 +54,11 @@ fn main() {
                  .value_name("path")
                  .help("Sets a project path")
                  .takes_value(true))
+        .arg(Arg::with_name("output_path")
+                 .long("output-path")
+                 .value_name("output_path")
+                 .help("Sets the output path")
+                 .takes_value(true))
         .arg(Arg::with_name("locale")
                  .short("l")
                  .long("locale")
@@ -54,11 +69,6 @@ fn main() {
                  .long("input-format")
                  .value_name("input_format")
                  .help("Sets the input format")
-                 .takes_value(true))
-        .arg(Arg::with_name("output_path")
-                 .long("output-path")
-                 .value_name("output_path")
-                 .help("Sets the output path")
                  .takes_value(true))
         .arg(Arg::with_name("output_format")
                  .long("output-format")
@@ -102,33 +112,41 @@ fn main() {
 
     let locale = matches.value_of("locale").unwrap_or("en_US");
 
+    let mut appstate = AppState {
+        locale: locale.to_string(),
+        path_config: config.to_string(),
+        path_in: path.to_string(),
+        path_out: output_path.to_string(),
+        format_in: input_format.clone(),
+        format_out: output_format.clone(),
+    };
+
     match matches.subcommand_name() {
-        Some("init") => subcommand_init(&path),
-        Some("export") => subcommand_export(&path, &output_format, &locale),
-        Some("import") => subcommand_import(&path, &input_format, &locale),
-        Some("transform") => subcommand_transform(&input_format, &output_format),
-        Some("validate") => subcommand_validate(&path),
-        Some("build") => subcommand_build(&path, &locale, &output_path),
-        Some("generate-translation") => subcommand_generate_translation(&path, &locale),
+        Some("init") => subcommand_init(&appstate),
+        Some("export") => subcommand_export(&mut appstate),
+        Some("import") => subcommand_import(&mut appstate),
+        Some("transform") => subcommand_transform(&appstate),
+        Some("validate") => subcommand_validate(&appstate),
+        Some("build") => subcommand_build(&appstate),
+        Some("generate-translation") => subcommand_generate_translation(&appstate),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
 
 }
 
-fn subcommand_init(path: &str) -> () {
-    gears::util::fs::init_new_model_dir(path);
+fn subcommand_init(appstate: &AppState) -> () {
+    let _ = gears::util::fs::init_new_model_dir(&appstate.path_out);
 }
 
-fn subcommand_validate(path: &str) -> () {
-    let model = load_model(path);
+fn subcommand_validate(appstate: &AppState) -> () {
+    let model = load_model(&appstate.path_in);
     let path_sep = ";".to_owned();
     let errors = gears::validation::common::validate_model(&model);
 
     if errors.len() > 0 {
         for error in &errors {
-            println!("Error '{}' : Error '{}' - Path '{}'",
-                     error.code,
+            println!("Error '{}' - Path '{}'",
                      error.message,
                      error.paths.join(&path_sep));
         }
@@ -137,57 +155,59 @@ fn subcommand_validate(path: &str) -> () {
     }
 }
 
-fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
+fn subcommand_transform(appstate: &AppState) -> () {
     let buffer = read_stdin();
 
-    let model = match input_format {
-        &Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
-        &Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
+    let model = match appstate.format_in {
+        Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
+        Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
     };
 
-    match output_format {
-        &Format::YAML => println!("{}", model.to_yaml()),
-        &Format::JSON => println!("{}", model.to_json()),
+    match appstate.format_out {
+        Format::YAML => println!("{}", model.to_yaml()),
+        Format::JSON => println!("{}", model.to_json()),
     }
 }
 
-fn subcommand_build(path: &str, locale: &str, output_path: &str) -> () {
-    let mut model = load_model(path);
+fn subcommand_build(appstate: &AppState) -> () {
+    let mut model = load_model(&appstate.path_in);
     model.pad_all_translations();
-    let model_locale = model.as_locale(&locale).unwrap();
+    let model_locale = model.as_locale(&appstate.locale).unwrap();
 
-    gears::util::fs::build_to_react_app(&model, &output_path);
+    let _ = gears::util::fs::build_to_react_app(&model_locale, &appstate.path_out);
 
 }
 
-fn subcommand_import(path: &str, input_format: &Format, locale: &str) -> () {
+fn subcommand_import(appstate: &mut AppState) -> () {
     let buffer = read_stdin();
 
-    let model = match input_format {
-        &Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
-        &Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
+    let model = match appstate.format_in {
+        Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
+        Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
     };
 
-    let _ = gears::util::fs::model_to_fs(&model.as_locale(&locale).unwrap(), &path).unwrap();
+    let _ = gears::util::fs::model_to_fs(&model.as_locale(&appstate.locale).unwrap(),
+                                         &appstate.path_in)
+        .unwrap();
 
 }
 
-fn subcommand_export(path: &str, output_format: &Format, locale: &str) -> () {
+fn subcommand_export(appstate: &mut AppState) -> () {
 
-    let model = gears::util::fs::model_from_fs(&path).unwrap();
+    let model = gears::util::fs::model_from_fs(&appstate.path_in).unwrap();
 
-    match output_format {
-        &Format::YAML => println!("{}", model.as_locale(&locale).unwrap().to_yaml()),
-        &Format::JSON => println!("{}", model.as_locale(&locale).unwrap().to_json()),
+    match appstate.format_out {
+        Format::YAML => println!("{}", model.as_locale(&appstate.locale).unwrap().to_yaml()),
+        Format::JSON => println!("{}", model.as_locale(&appstate.locale).unwrap().to_json()),
     }
 
 }
 
-fn subcommand_generate_translation(path: &str, locale: &str) -> () {
+fn subcommand_generate_translation(appstate: &AppState) -> () {
 
-    let mut model = load_model(path);
-    let _ = model.add_locale(locale);
+    let mut model = load_model(&appstate.path_in);
+    let _ = model.add_locale(&appstate.locale);
     model.pad_all_translations();
-    let _ = gears::util::fs::model_to_fs(&model, &path).unwrap();
+    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_in).unwrap();
 
 }
