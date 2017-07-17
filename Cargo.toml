@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 
 [dependencies]
-gears = "0.1.1"
+gears = "0.1.2"
 log = "0.3"
 env_logger = "0.4"
 
@@ -14,7 +14,7 @@ default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
 
 [replace]
-"gears:0.1.1" = { path = "/home/michiel/dev/github/gears-core-rust" }
-# "gears:0.1.1" = { git = 'https://github.com/gears-project/gears-core-rust' }
+# "gears:0.1.2" = { path = "/home/michiel/dev/github/gears-core-rust" }
+"gears:0.1.2" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
 

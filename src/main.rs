@@ -1,4 +1,4 @@
-extern crate xflow;
+extern crate gears;
 #[macro_use]
 extern crate log;
 extern crate clap;
@@ -6,8 +6,8 @@ use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
 extern crate env_logger;
 
-fn load_model(path: &str) -> xflow::structure::model::ModelDocument {
-    let model = xflow::util::fs::model_from_fs(path).unwrap();
+fn load_model(path: &str) -> gears::structure::model::ModelDocument {
+    let model = gears::util::fs::model_from_fs(path).unwrap();
     model
 }
 
@@ -117,13 +117,13 @@ fn main() {
 }
 
 fn subcommand_init(path: &str) -> () {
-    xflow::util::fs::init_new_model_dir(path);
+    gears::util::fs::init_new_model_dir(path);
 }
 
 fn subcommand_validate(path: &str) -> () {
     let model = load_model(path);
     let path_sep = ";".to_owned();
-    let errors = xflow::validation::common::validate_model(&model);
+    let errors = gears::validation::common::validate_model(&model);
 
     if errors.len() > 0 {
         for error in &errors {
@@ -141,8 +141,8 @@ fn subcommand_transform(input_format: &Format, output_format: &Format) -> () {
     let buffer = read_stdin();
 
     let model = match input_format {
-        &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
-        &Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
+        &Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
+        &Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
     };
 
     match output_format {
@@ -156,7 +156,7 @@ fn subcommand_build(path: &str, locale: &str, output_path: &str) -> () {
     model.pad_all_translations();
     let model_locale = model.as_locale(&locale).unwrap();
 
-    xflow::util::fs::build_to_react_app(&model, &output_path);
+    gears::util::fs::build_to_react_app(&model, &output_path);
 
 }
 
@@ -164,17 +164,17 @@ fn subcommand_import(path: &str, input_format: &Format, locale: &str) -> () {
     let buffer = read_stdin();
 
     let model = match input_format {
-        &Format::YAML => xflow::structure::model::ModelDocument::from_yaml(&buffer),
-        &Format::JSON => xflow::structure::model::ModelDocument::from_json(&buffer),
+        &Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
+        &Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
     };
 
-    let _ = xflow::util::fs::model_to_fs(&model.as_locale(&locale).unwrap(), &path).unwrap();
+    let _ = gears::util::fs::model_to_fs(&model.as_locale(&locale).unwrap(), &path).unwrap();
 
 }
 
 fn subcommand_export(path: &str, output_format: &Format, locale: &str) -> () {
 
-    let model = xflow::util::fs::model_from_fs(&path).unwrap();
+    let model = gears::util::fs::model_from_fs(&path).unwrap();
 
     match output_format {
         &Format::YAML => println!("{}", model.as_locale(&locale).unwrap().to_yaml()),
@@ -188,6 +188,6 @@ fn subcommand_generate_translation(path: &str, locale: &str) -> () {
     let mut model = load_model(path);
     let _ = model.add_locale(locale);
     model.pad_all_translations();
-    let _ = xflow::util::fs::model_to_fs(&model, &path).unwrap();
+    let _ = gears::util::fs::model_to_fs(&model, &path).unwrap();
 
 }
