@@ -53,7 +53,7 @@ test_script:
 
 before_deploy:
   # TODO Update this to build the artifacts that matter to you
-  - cargo rustc --target %TARGET% --release --bin hello -- -C lto
+  - cargo rustc --target %TARGET% --release --bin gears-cli -- -C lto
   - ps: ci\before_deploy.ps1
 
 deploy:
@@ -63,7 +63,7 @@ deploy:
   # - Encrypt it. Go to https://ci.appveyor.com/tools/encrypt
   # - Paste the output down here
   auth_token:
-    secure: t3puM/2hOig26EHhAodcZBc61NywF7/PFEpimR6SwGaCiqS07KR5i7iAhSABmBp7
+    secure: 2ecz1qX9JHGbQ3H60EWdfyzNlR/Let5Et+1FSTlIpOjIkJJHvm9ApywwXtDirm4E
   description: ''
   on:
     # TODO Here you can pick which targets will generate binary releases
