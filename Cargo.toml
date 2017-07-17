@@ -2,6 +2,14 @@
 name = "gears-cli"
 version = "0.1.1"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
+description = "Gears CLI tool"
+documentation = "https://docs.rs/xflow"
+homepage = "https://github.com/gears-project/gears-cli"
+repository = "https://github.com/gears-project/gears-cli.git"
+readme = "README.md"
+keywords = ["gears"]
+categories = []
+license = "MIT"
 
 [dependencies]
 gears = "0.1.2"
