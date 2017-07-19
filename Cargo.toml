@@ -1,6 +1,6 @@
 [package]
 name = "gears-cli"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 description = "Gears CLI tool"
 documentation = "https://docs.rs/xflow"
