@@ -2,7 +2,7 @@ extern crate gears;
 #[macro_use]
 extern crate log;
 extern crate clap;
-use clap::{Arg, App, SubCommand};
+use clap::{Arg, App, SubCommand, ArgMatches};
 use std::io::{self, Read};
 extern crate env_logger;
 
@@ -39,9 +39,9 @@ fn main() {
     let _ = env_logger::init();
 
     let matches = App::new("gears-cli")
-        .version("0.1.0")
+        .version("0.1.3")
         .author("Michiel Kalkman <michiel@nosuchtype.com")
-        .about("Does awesome things")
+        .about("CLI tool for working with gears-project models")
         .arg(Arg::with_name("config")
                  .short("c")
                  .long("config")
@@ -52,27 +52,34 @@ fn main() {
                  .short("p")
                  .long("path")
                  .value_name("path")
+                 .default_value(".")
                  .help("Sets a project path")
                  .takes_value(true))
         .arg(Arg::with_name("output_path")
                  .long("output-path")
                  .value_name("output_path")
+                 .default_value(".")
                  .help("Sets the output path")
                  .takes_value(true))
         .arg(Arg::with_name("locale")
                  .short("l")
                  .long("locale")
                  .value_name("locale")
+                 .default_value("en_US")
                  .help("Set the project locale")
                  .takes_value(true))
         .arg(Arg::with_name("input_format")
                  .long("input-format")
                  .value_name("input_format")
+                 .possible_values(&["json", "yaml"])
+                 .default_value("json")
                  .help("Sets the input format")
                  .takes_value(true))
         .arg(Arg::with_name("output_format")
                  .long("output-format")
                  .value_name("output_format")
+                 .possible_values(&["json", "yaml"])
+                 .default_value("json")
                  .help("Sets the output format")
                  .takes_value(true))
         .arg(Arg::with_name("v")
@@ -202,7 +209,7 @@ fn subcommand_export(appstate: &mut AppState) -> () {
 
 }
 
-fn subcommand_generate(appstate: &AppState, matches_option: Option<&clap::ArgMatches>) -> () {
+fn subcommand_generate(appstate: &AppState, matches_option: Option<&ArgMatches>) -> () {
 
     let mut model = load_model(&appstate.path_in);
 
