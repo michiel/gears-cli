@@ -142,10 +142,12 @@ fn main() {
 }
 
 fn subcommand_init(appstate: &AppState) -> () {
+    info!("init: in directory {}", appstate.path_in);
     let _ = gears::util::fs::init_new_model_dir(&appstate.path_in);
 }
 
 fn subcommand_validate(appstate: &AppState) -> () {
+    info!("validate: model in '{}'", appstate.path_in);
     let model = load_model(&appstate.path_in);
     let path_sep = ";".to_owned();
     let errors = gears::validation::common::validate_model(&model);
@@ -176,6 +178,10 @@ fn subcommand_transform(appstate: &AppState) -> () {
 }
 
 fn subcommand_build(appstate: &AppState) -> () {
+    info!("build: model in '{}', building assets in '{}'",
+          appstate.path_in,
+          appstate.path_out);
+
     let mut model = load_model(&appstate.path_in);
     model.pad_all_translations();
     let model_locale = model.as_locale(&appstate.locale).unwrap();
@@ -210,6 +216,7 @@ fn subcommand_export(appstate: &mut AppState) -> () {
 }
 
 fn subcommand_generate(appstate: &AppState, matches_option: Option<&ArgMatches>) -> () {
+    info!("generate: model in '{}'", appstate.path_in);
 
     let mut model = load_model(&appstate.path_in);
 
