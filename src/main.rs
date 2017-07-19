@@ -79,11 +79,7 @@ fn main() {
                  .short("v")
                  .multiple(true)
                  .help("Sets the level of verbosity"))
-        .subcommand(SubCommand::with_name("init")
-                        .about("Initialize a new project")
-                        .arg(Arg::with_name("dir")
-                                 .short("d")
-                                 .help("Project directory and name")))
+        .subcommand(SubCommand::with_name("init").about("Initialize a new project"))
         .subcommand(SubCommand::with_name("export").about("Export an existing project"))
         .subcommand(SubCommand::with_name("import").about("Import an existing project"))
         .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
@@ -91,12 +87,16 @@ fn main() {
         .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
         .subcommand(SubCommand::with_name("generate-translation")
                         .about("Add a new locale and translation to a project"))
+        .subcommand(SubCommand::with_name("generate")
+                        .about("Generate a model component")
+                        .arg(Arg::with_name("model_component")
+                                 .possible_values(&["xflow", "translation", "page"])))
         .get_matches();
 
 
     let config = matches.value_of("config").unwrap_or("project.conf");
     let path = matches.value_of("path").unwrap_or(".");
-    let output_path = matches.value_of("output_path").unwrap_or("/tmp/x5");
+    let output_path = matches.value_of("output_path").unwrap_or(".");
 
     let input_format = if matches.value_of("input_format").unwrap_or("json") == "yaml" {
         Format::YAML
@@ -128,15 +128,14 @@ fn main() {
         Some("transform") => subcommand_transform(&appstate),
         Some("validate") => subcommand_validate(&appstate),
         Some("build") => subcommand_build(&appstate),
-        Some("generate-translation") => subcommand_generate_translation(&appstate),
+        Some("generate") => subcommand_generate(&appstate, matches.subcommand_matches("generate")),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
-
 }
 
 fn subcommand_init(appstate: &AppState) -> () {
-    let _ = gears::util::fs::init_new_model_dir(&appstate.path_out);
+    let _ = gears::util::fs::init_new_model_dir(&appstate.path_in);
 }
 
 fn subcommand_validate(appstate: &AppState) -> () {
@@ -203,11 +202,39 @@ fn subcommand_export(appstate: &mut AppState) -> () {
 
 }
 
-fn subcommand_generate_translation(appstate: &AppState) -> () {
+fn subcommand_generate(appstate: &AppState, matches_option: Option<&clap::ArgMatches>) -> () {
 
     let mut model = load_model(&appstate.path_in);
-    let _ = model.add_locale(&appstate.locale);
-    model.pad_all_translations();
-    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_in).unwrap();
+
+    match matches_option {
+        Some(matches) => {
+            match matches.value_of("model_component") {
+                Some("xflow") => {
+                    info!("generate: xflow");
+                    let doc = gears::structure::xflow::XFlowDocument::default();
+                    model.doc.xflows.push(doc);
+                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
+                }
+                Some("translation") => {
+                    info!("generate: translation");
+                    let _ = model.add_locale(&appstate.locale);
+                    model.pad_all_translations();
+                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
+                }
+                Some("page") => {
+                    info!("generate: page");
+                    let doc = gears::structure::page::PageDocument::default();
+                    model.doc.pages.push(doc);
+                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
+                }
+                _ => {
+                    error!("generate: Incorrect argument");
+                }
+            }
+        }
+        None => {
+            error!("generate: No matches found for generate task");
+        }
+    }
 
 }
