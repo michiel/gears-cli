@@ -22,7 +22,7 @@ default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
 
 [replace]
-"gears:0.1.3" = { path = "/home/michiel/dev/github/gears-core-rust" }
-# "gears:0.1.3" = { git = 'https://github.com/gears-project/gears-core-rust' }
+# "gears:0.1.3" = { path = "/home/michiel/dev/github/gears-core-rust" }
+"gears:0.1.3" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
 
