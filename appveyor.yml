@@ -1,6 +1,6 @@
 
 # https://github.com/japaric/trust/tree/v0.1.1
-
+os: Previous Visual Studio 2015
 environment:
   global:
   # TODO This is the Rust channel that build jobs will use by default but can be
