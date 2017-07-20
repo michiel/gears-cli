@@ -10,16 +10,21 @@ readme = "README.md"
 keywords = ["gears"]
 categories = []
 license = "MIT"
+build = "build.rs"
 
 [dependencies]
 gears = "0.1.5"
 log = "0.3"
 env_logger = "0.4"
+rustyline = "1.0"
 
 [dependencies.clap]
 version = "~2.25.0"
 default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
+
+[build-dependencies]
+peg = { version = "0.5" }
 
 [replace]
 # "gears:0.1.5" = { path = "/home/michiel/dev/github/gears-core-rust" }

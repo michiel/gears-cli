@@ -1,0 +1,31 @@
+use shell::{Command, ModelComponent};
+
+pub expression -> Command
+  = set
+  / generate
+  / destroy
+  / help
+
+set -> Command
+  = "set" " " key:$([A-Za-z]+) " " val:$([A-Za-z]+) {
+    Command::Set(key.to_string(), val.to_string())
+  }
+
+generate -> Command
+  = "generate" " " key:model_component " " val:$([A-Za-z]+) {
+    Command::Generate(key, val.to_string())
+  }
+
+destroy -> Command
+  = "destroy" " " key:model_component " " val:$([A-Za-z]+) {
+    Command::Destroy(key, val.to_string())
+  }
+
+help -> Command
+ = "help" { Command::Help }
+
+model_component -> ModelComponent
+  = "xflow" { ModelComponent::XFlow }
+  / "page" { ModelComponent::Page }
+  / "translation" { ModelComponent::Translation }
+
