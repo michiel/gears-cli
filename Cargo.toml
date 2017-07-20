@@ -1,6 +1,6 @@
 [package]
 name = "gears-cli"
-version = "0.1.6"
+version = "0.1.8"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 description = "Gears CLI tool"
 documentation = "https://docs.rs/xflow"
@@ -13,7 +13,7 @@ license = "MIT"
 build = "build.rs"
 
 [dependencies]
-gears = "0.1.7"
+gears = "0.1.5"
 log = "0.3"
 env_logger = "0.4"
 rustyline = "1.0"
