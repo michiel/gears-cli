@@ -2,9 +2,13 @@ extern crate gears;
 #[macro_use]
 extern crate log;
 extern crate clap;
+extern crate rustyline;
+
 use clap::{Arg, App, SubCommand, ArgMatches};
 use std::io::{self, Read};
 extern crate env_logger;
+
+mod shell;
 
 fn load_model(path: &str) -> gears::structure::model::ModelDocument {
     let model = gears::util::fs::model_from_fs(path).unwrap();
@@ -86,6 +90,7 @@ fn main() {
                  .short("v")
                  .multiple(true)
                  .help("Sets the level of verbosity"))
+        .subcommand(SubCommand::with_name("shell").about("Run an interactive shell"))
         .subcommand(SubCommand::with_name("init").about("Initialize a new project"))
         .subcommand(SubCommand::with_name("export").about("Export an existing project"))
         .subcommand(SubCommand::with_name("import").about("Import an existing project"))
@@ -130,6 +135,7 @@ fn main() {
 
     match matches.subcommand_name() {
         Some("init") => subcommand_init(&appstate),
+        Some("shell") => subcommand_shell(&appstate),
         Some("export") => subcommand_export(&mut appstate),
         Some("import") => subcommand_import(&mut appstate),
         Some("transform") => subcommand_transform(&appstate),
@@ -144,6 +150,11 @@ fn main() {
 fn subcommand_init(appstate: &AppState) -> () {
     info!("init: in directory {}", appstate.path_in);
     let _ = gears::util::fs::init_new_model_dir(&appstate.path_in);
+}
+
+fn subcommand_shell(appstate: &AppState) -> () {
+    info!("shell: in directory {}", appstate.path_in);
+    shell::shell();
 }
 
 fn subcommand_validate(appstate: &AppState) -> () {
