@@ -2,13 +2,20 @@ use shell::{Command, ModelComponent};
 
 pub expression -> Command
   = set
+  / list
   / generate
   / destroy
   / help
+  / sync
 
 set -> Command
   = "set" " " key:$([A-Za-z]+) " " val:$([A-Za-z]+) {
     Command::Set(key.to_string(), val.to_string())
+  }
+
+list -> Command
+  = "list" " " key:model_component {
+    Command::List(key)
   }
 
 generate -> Command
@@ -23,6 +30,9 @@ destroy -> Command
 
 help -> Command
  = "help" { Command::Help }
+
+sync -> Command
+ = "sync" { Command::Sync }
 
 model_component -> ModelComponent
   = "xflow" { ModelComponent::XFlow }

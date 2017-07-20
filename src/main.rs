@@ -8,6 +8,9 @@ use clap::{Arg, App, SubCommand, ArgMatches};
 use std::io::{self, Read};
 extern crate env_logger;
 
+mod app;
+use app::{AppState, Format};
+
 mod shell;
 
 fn load_model(path: &str) -> gears::structure::model::ModelDocument {
@@ -22,21 +25,6 @@ fn read_stdin() -> String {
 
     handle.read_to_string(&mut buffer).unwrap();
     buffer
-}
-
-#[derive(Clone)]
-enum Format {
-    JSON,
-    YAML,
-}
-
-struct AppState {
-    locale: String,
-    path_config: String,
-    path_in: String,
-    path_out: String,
-    format_in: Format,
-    format_out: Format,
 }
 
 fn main() {
@@ -154,7 +142,8 @@ fn subcommand_init(appstate: &AppState) -> () {
 
 fn subcommand_shell(appstate: &AppState) -> () {
     info!("shell: in directory {}", appstate.path_in);
-    shell::shell();
+    let mut model = load_model(&appstate.path_in);
+    shell::shell(&mut model, &appstate);
 }
 
 fn subcommand_validate(appstate: &AppState) -> () {
