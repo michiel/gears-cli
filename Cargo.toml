@@ -13,7 +13,7 @@ license = "MIT"
 build = "build.rs"
 
 [dependencies]
-gears = "0.1.5"
+gears = "0.1.7"
 log = "0.3"
 env_logger = "0.4"
 rustyline = "1.0"
