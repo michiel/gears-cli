@@ -11,6 +11,8 @@ mod command_grammar {
     include!(concat!(env!("OUT_DIR"), "/command_grammar.rs"));
 }
 
+static HISTORY_FILE: &'static str = "history.gears-shell";
+
 // On unix platforms you can use ANSI escape sequences
 #[cfg(unix)]
 static PROMPT: &'static str = "\x1b[1;32m>>\x1b[0m ";
@@ -121,9 +123,15 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command_sync(&self) -> () {
-        let _ = gears::util::fs::model_to_fs(&self.model.as_locale(&self.appstate.locale).unwrap(),
-                                             &self.appstate.path_in)
-            .unwrap();
+        match gears::util::fs::model_to_fs(&self.model.as_locale(&self.appstate.locale).unwrap(),
+                                           &self.appstate.path_in) {
+            Ok(_) => {
+                println!("<< sync OK");
+            }
+            Err(err) => {
+                println!("<< sync ERROR : {:?}", err);
+            }
+        }
     }
 }
 
@@ -136,7 +144,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
 
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new();
-    if let Err(_) = rl.load_history("history.gears-shell") {
+    if let Err(_) = rl.load_history(HISTORY_FILE) {
         println!("<< No previous history.");
     }
 
@@ -162,7 +170,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
             }
         }
     }
-    rl.save_history("history.gears-shell").unwrap();
+    rl.save_history(HISTORY_FILE).unwrap();
 }
 
 #[derive(Debug)]
