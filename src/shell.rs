@@ -11,6 +11,15 @@ mod command_grammar {
     include!(concat!(env!("OUT_DIR"), "/command_grammar.rs"));
 }
 
+// On unix platforms you can use ANSI escape sequences
+#[cfg(unix)]
+static PROMPT: &'static str = "\x1b[1;32m>>\x1b[0m ";
+
+// Windows consoles typically don't support ANSI escape sequences out
+// of the box
+#[cfg(windows)]
+static PROMPT: &'static str = ">> ";
+
 struct ShellSession<'a> {
     appstate: &'a AppState,
     model: &'a mut ModelDocument,
@@ -31,7 +40,7 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command(&mut self, cmd: &Command) -> Result<(), ()> {
-        println!("<< Running command");
+        // println!("<< Running command");
         match *cmd {
             Command::Set(ref key, ref val) => {
                 println!("<< Setting {} to {}", key, val);
@@ -48,7 +57,6 @@ impl<'a> ShellSession<'a> {
                 println!("Destroying {:?} with name {}", component, val);
             }
             Command::Help => {
-                println!("Help");
                 self.run_command_help();
             }
             Command::Sync => {
@@ -105,7 +113,11 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command_help(&self) -> () {
-        println!("Help command");
+        println!("<< Help");
+        println!("<< Use Ctrl-D or Ctrl-C to exit");
+        println!("<< All changes are in-memory until a sync command is issued");
+        println!("<< Read commands are help, list");
+        println!("<< Write commands are generate, destroy, sync");
     }
 
     pub fn run_command_sync(&self) -> () {
@@ -125,15 +137,15 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new();
     if let Err(_) = rl.load_history("history.gears-shell") {
-        println!("No previous history.");
+        println!("<< No previous history.");
     }
 
     loop {
-        let readline = rl.readline(">> ");
+        let readline = rl.readline(PROMPT);
         match readline {
             Ok(line) => {
                 rl.add_history_entry(&line);
-                println!("Line: {}", line);
+                // println!("Line: {}", line);
                 shell_session.run_line(&line);
             }
             Err(ReadlineError::Interrupted) => {
