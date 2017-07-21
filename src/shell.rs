@@ -17,11 +17,24 @@ struct ShellSession<'a> {
 }
 
 impl<'a> ShellSession<'a> {
+    pub fn run_line(&mut self, line: &str) -> Result<(), ()> {
+        match command_grammar::expression(&line) {
+            Ok(cmd) => {
+                self.run_command(&cmd);
+                Ok(())
+            }
+            Err(err) => {
+                println!("<< Expected : {:?}", err.expected);
+                Err(())
+            }
+        }
+    }
+
     pub fn run_command(&mut self, cmd: &Command) -> Result<(), ()> {
-        println!("Running command");
+        println!("<< Running command");
         match *cmd {
             Command::Set(ref key, ref val) => {
-                println!("Setting {} to {}", key, val);
+                println!("<< Setting {} to {}", key, val);
             }
             Command::List(ref component) => {
                 debug!("Listing {:?}", component);
@@ -39,7 +52,7 @@ impl<'a> ShellSession<'a> {
                 self.run_command_help();
             }
             Command::Sync => {
-                println!("Sync");
+                println!("<< sync");
                 self.run_command_sync();
             }
         }
@@ -47,20 +60,26 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command_list(&self, component: &ModelComponent) -> () {
+        //
+        // XXX: Use Document::summary in later versions
+        //
         match *component {
             ModelComponent::XFlow => {
                 for doc in &self.model.doc.xflows {
-                    println!("XFlow: ID {:?}", doc.id);
+                    println!("XFlow: ID {:?} - {:?}", doc.id, doc.name);
                 }
             }
             ModelComponent::Page => {
                 for doc in &self.model.doc.pages {
-                    println!("Page: ID {:?}", doc.id);
+                    println!("Page: ID {:?} - {:?}", doc.id, doc.name);
                 }
             }
             ModelComponent::Translation => {
                 for doc in &self.model.doc.translations {
-                    println!("Translation: ID {:?}", doc.id);
+                    println!("Translation: ID {:?} - {:?} - {:?}",
+                             doc.id,
+                             doc.name,
+                             doc.doc.locale);
                 }
             }
         }
@@ -70,13 +89,18 @@ impl<'a> ShellSession<'a> {
         match *component {
             ModelComponent::XFlow => {
                 let mut doc = gears::structure::xflow::XFlowDocument::default();
+                doc.name = name.to_string();
                 self.model.doc.xflows.push(doc);
             }
             ModelComponent::Page => {
                 let mut doc = gears::structure::page::PageDocument::default();
+                doc.name = name.to_string();
                 self.model.doc.pages.push(doc);
             }
-            ModelComponent::Translation => {}
+            ModelComponent::Translation => {
+                let _ = self.model.add_locale(&name);
+                let _ = self.model.pad_all_translations();
+            }
         }
     }
 
@@ -92,7 +116,7 @@ impl<'a> ShellSession<'a> {
 }
 
 pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
-    println!("Running gears-shell");
+    println!("<< Running gears-shell");
     let mut shell_session = ShellSession {
         appstate: appstate,
         model: model,
@@ -110,14 +134,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
             Ok(line) => {
                 rl.add_history_entry(&line);
                 println!("Line: {}", line);
-                match command_grammar::expression(&line) {
-                    Ok(cmd) => {
-                        shell_session.run_command(&cmd);
-                    }
-                    Err(err) => {
-                        println!("Expected : {:?}", err.expected);
-                    }
-                };
+                shell_session.run_line(&line);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -133,7 +150,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
             }
         }
     }
-    rl.save_history("history.txt").unwrap();
+    rl.save_history("history.gears-shell").unwrap();
 }
 
 #[derive(Debug)]

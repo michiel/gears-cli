@@ -9,23 +9,23 @@ pub expression -> Command
   / sync
 
 set -> Command
-  = "set" " " key:$([A-Za-z]+) " " val:$([A-Za-z]+) {
-    Command::Set(key.to_string(), val.to_string())
+  = "set" _ key:label _ val:label {
+    Command::Set(key, val)
   }
 
 list -> Command
-  = "list" " " key:model_component {
+  = "list" _ key:model_component {
     Command::List(key)
-  }
+}
 
 generate -> Command
-  = "generate" " " key:model_component " " val:$([A-Za-z]+) {
-    Command::Generate(key, val.to_string())
+  = "generate" _ key:model_component _ val:label {
+    Command::Generate(key, val)
   }
 
 destroy -> Command
-  = "destroy" " " key:model_component " " val:$([A-Za-z]+) {
-    Command::Destroy(key, val.to_string())
+  = "destroy" _ key:model_component _ val:label {
+    Command::Destroy(key, val)
   }
 
 help -> Command
@@ -39,3 +39,13 @@ model_component -> ModelComponent
   / "page" { ModelComponent::Page }
   / "translation" { ModelComponent::Translation }
 
+label -> String
+  = label:$([A-Za-z0-9\_]+) {
+    label.to_string()
+  }
+
+_ -> ()
+  = space*
+
+space -> ()
+  = " "
