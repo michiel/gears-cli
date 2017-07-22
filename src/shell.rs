@@ -100,11 +100,13 @@ impl<'a> ShellSession<'a> {
             ModelComponent::XFlow => {
                 let mut doc = gears::structure::xflow::XFlowDocument::default();
                 doc.name = name.to_string();
+                println!("XFlow: ID {:?} - {:?}", doc.id, doc.name);
                 self.model.doc.xflows.push(doc);
             }
             ModelComponent::Page => {
                 let mut doc = gears::structure::page::PageDocument::default();
                 doc.name = name.to_string();
+                println!("Page: ID {:?} - {:?}", doc.id, doc.name);
                 self.model.doc.pages.push(doc);
             }
             ModelComponent::Translation => {

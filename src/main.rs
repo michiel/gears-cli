@@ -85,12 +85,6 @@ fn main() {
         .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
         .subcommand(SubCommand::with_name("build").about("Build project artifacts"))
         .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
-        .subcommand(SubCommand::with_name("generate-translation")
-                        .about("Add a new locale and translation to a project"))
-        .subcommand(SubCommand::with_name("generate")
-                        .about("Generate a model component")
-                        .arg(Arg::with_name("model_component")
-                                 .possible_values(&["xflow", "translation", "page"])))
         .get_matches();
 
 
@@ -129,7 +123,6 @@ fn main() {
         Some("transform") => subcommand_transform(&appstate),
         Some("validate") => subcommand_validate(&appstate),
         Some("build") => subcommand_build(&appstate),
-        Some("generate") => subcommand_generate(&appstate, matches.subcommand_matches("generate")),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
@@ -212,43 +205,4 @@ fn subcommand_export(appstate: &mut AppState) -> () {
         Format::YAML => println!("{}", model.as_locale(&appstate.locale).unwrap().to_yaml()),
         Format::JSON => println!("{}", model.as_locale(&appstate.locale).unwrap().to_json()),
     }
-
-}
-
-fn subcommand_generate(appstate: &AppState, matches_option: Option<&ArgMatches>) -> () {
-    info!("generate: model in '{}'", appstate.path_in);
-
-    let mut model = load_model(&appstate.path_in);
-
-    match matches_option {
-        Some(matches) => {
-            match matches.value_of("model_component") {
-                Some("xflow") => {
-                    info!("generate: xflow");
-                    let doc = gears::structure::xflow::XFlowDocument::default();
-                    model.doc.xflows.push(doc);
-                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
-                }
-                Some("translation") => {
-                    info!("generate: translation");
-                    let _ = model.add_locale(&appstate.locale);
-                    model.pad_all_translations();
-                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
-                }
-                Some("page") => {
-                    info!("generate: page");
-                    let doc = gears::structure::page::PageDocument::default();
-                    model.doc.pages.push(doc);
-                    let _ = gears::util::fs::model_to_fs(&model, &appstate.path_out).unwrap();
-                }
-                _ => {
-                    error!("generate: Incorrect argument");
-                }
-            }
-        }
-        None => {
-            error!("generate: No matches found for generate task");
-        }
-    }
-
 }
