@@ -124,7 +124,7 @@ fn main() {
     let _ = env_logger::init();
 
     let matches = App::new("gears-cli")
-        .version("0.1.8")
+        .version("0.1.9")
         .author("Michiel Kalkman <michiel@nosuchtype.com")
         .about("CLI tool for working with gears-project models")
         .arg(Arg::with_name("config")
