@@ -6,6 +6,11 @@ extern crate rustyline;
 
 use clap::{Arg, App, SubCommand, ArgMatches};
 use std::io::{self, Read};
+use std::fs::File;
+use std::path::Path;
+use std::error::Error;
+use std::io::prelude::*;
+
 extern crate env_logger;
 
 mod app;
@@ -25,6 +30,94 @@ fn read_stdin() -> String {
 
     handle.read_to_string(&mut buffer).unwrap();
     buffer
+}
+
+
+fn write_file(filename: &str, data: &str) -> () {
+    let path = Path::new(filename);
+    let display = path.display();
+
+    let mut file = match File::create(&path) {
+        Err(why) => {
+            error!("couldn't create {}: {}", display, why.description());
+            panic!("couldn't create {}: {}", display, why.description());
+        }
+        Ok(file) => file,
+    };
+
+    match file.write_all(data.as_bytes()) {
+        Err(why) => {
+            error!("couldn't write to {}: {}", display, why.description());
+            panic!("couldn't write to {}: {}", display, why.description());
+        }
+        Ok(_) => debug!("successfully wrote to {}", display),
+    }
+}
+
+
+fn add_project_files(path: &str) -> () {
+
+    write_file(
+        &(format!("{}/.gitignore", path)),
+        r#"**/*tmp
+**/*log
+**/*.bk
+**/*.swp
+**/*.swo
+history.gears-project
+local.json
+"#,
+    );
+
+    write_file(
+        &(format!("{}/README.md", path)),
+        r#"
+# gears project
+
+This project is suitable for version control.
+
+It is recommended to initialize this project with `git`, though any VCS will do.
+
+    git init
+    git add .
+    git commit -m "Initial commit"
+
+## Help
+
+Have the `gears-cli` tool installed. See 
+[http://github.com/gears-project/gears-cli](http://github.com/gears-project/gears-cli)
+
+For general information, visit the project hub at
+[http://github.com/gears-project/](http://github.com/gears-project/)
+
+    gears-cli --help
+
+## Build
+
+    gears-cli build
+
+## Interactive shell
+
+    gears-cli shell
+    << Running gears-shell
+	>> list xflow
+	XFlow: ID Uuid("606dc85d-9daf-4045-8b85-0c7ccb667c63") - "zork"
+	>> generate xflow my_first_xflow
+	XFlow: ID Uuid("5e0d1a30-9c48-489c-af2d-a34054c98316") - "my_first_xflow"
+	>> generate page my_first_page
+	Page: ID Uuid("fc016992-95ad-49aa-9cb4-9814ce803d9a") - "my_first_page"
+	>> generate translation es_ES
+	>> list translation
+	Translation: ID Uuid("0cab532f-3c5c-49a7-89c0-9132e14039a8") - "default" - "en_US"
+	Translation: ID Uuid("5f64834b-bfb4-4075-966d-0d8a4cfe6232") - "default" - "es_ES"
+    >> sync
+
+When using the interactive shell to make changes, remember that changes are **ONLY SAVED AFTER
+ISSUING A `sync` COMMAND**.
+
+"#,
+    );
+
 }
 
 fn main() {
@@ -131,6 +224,7 @@ fn main() {
 fn subcommand_init(appstate: &AppState) -> () {
     info!("init: in directory {}", appstate.path_in);
     let _ = gears::util::fs::init_new_model_dir(&appstate.path_in);
+    add_project_files(&appstate.path_in);
 }
 
 fn subcommand_shell(appstate: &AppState) -> () {
