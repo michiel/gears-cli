@@ -65,6 +65,10 @@ impl<'a> ShellSession<'a> {
                 println!("<< sync");
                 self.run_command_sync();
             }
+            Command::Dsl(ref dsl_cmd) => {
+                println!("<< component_dsl_command");
+                self.run_command_dsl(dsl_cmd);
+            }
         }
         Ok(())
     }
@@ -86,10 +90,12 @@ impl<'a> ShellSession<'a> {
             }
             ModelComponent::Translation => {
                 for doc in &self.model.doc.translations {
-                    println!("Translation: ID {:?} - {:?} - {:?}",
-                             doc.id,
-                             doc.name,
-                             doc.doc.locale);
+                    println!(
+                        "Translation: ID {:?} - {:?} - {:?}",
+                        doc.id,
+                        doc.name,
+                        doc.doc.locale
+                    );
                 }
             }
         }
@@ -125,13 +131,73 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command_sync(&self) -> () {
-        match gears::util::fs::model_to_fs(&self.model.as_locale(&self.appstate.locale).unwrap(),
-                                           &self.appstate.path_in) {
+        match gears::util::fs::model_to_fs(
+            &self.model.as_locale(&self.appstate.locale).unwrap(),
+            &self.appstate.path_in,
+        ) {
             Ok(_) => {
                 println!("<< sync OK");
             }
             Err(err) => {
                 println!("<< sync ERROR : {:?}", err);
+            }
+        }
+    }
+
+    pub fn run_command_dsl(&mut self, dsl_cmd: &ComponentDslCommand) -> () {
+        println!("<< RUN COMMAND DSL");
+        use gears::structure::domain::*;
+
+        match *dsl_cmd {
+            ComponentDslCommand::XFlow(ref xflow_command) => {
+                println!("Unimplemented!");
+            }
+            ComponentDslCommand::Domain(ref domain_command) => {
+                info!("Domain command: {:?}", domain_command);
+                match *domain_command {
+                    DomainCommand::AddEntity(ref entity) => {
+                        let entity = Entity {
+                            name: entity.clone(),
+                            attributes: Attributes::new(),
+                            references: References::new(),
+                        };
+                        self.model.doc.domain.doc.entities.push(entity);
+                    }
+                    DomainCommand::RemoveEntity(ref entity) => {
+                        let entities = self.model.doc.domain.doc.entities.clone();
+
+                        self.model.doc.domain.doc.entities = entities
+                            .into_iter()
+                            .filter({
+                                |e| e.name.ne(entity)
+                            })
+                            .collect();
+                    }
+                    DomainCommand::AlterEntity(ref entity, ref entity_b) => {
+                        error!("NOT IMPLEMENTED");
+                    }
+                    DomainCommand::RenameEntity(ref entity, ref entity_b) => {
+                        error!("NOT IMPLEMENTED");
+                    }
+                    DomainCommand::AddAttribute(ref entity, ref attribute, ref attribute_type) => {
+                        let attribute = Attribute {
+                            name: attribute.to_string(),
+                            vtype: attribute_type.to_string(),
+                            default: "".to_owned(),
+                            validations: Vec::<Validation>::new(),
+                        };
+                        error!("NOT IMPLEMENTED");
+                    }
+                    DomainCommand::RemoveAttribute(ref entity, ref attribute) => {
+                        error!("NOT IMPLEMENTED");
+                    }
+                    DomainCommand::AlterAttribute(ref entity, ref attribute, ref vals) => {
+                        error!("NOT IMPLEMENTED");
+                    }
+                    DomainCommand::RenameAttribute(ref entity, ref attribute) => {
+                        error!("NOT IMPLEMENTED");
+                    }
+                }
             }
         }
     }
@@ -190,4 +256,28 @@ pub enum Command {
     List(ModelComponent),
     Generate(ModelComponent, String),
     Destroy(ModelComponent, String),
+    Dsl(ComponentDslCommand),
+}
+
+#[derive(Debug)]
+pub enum ComponentDslCommand {
+    Domain(DomainCommand),
+    XFlow(XFlowCommand),
+}
+
+#[derive(Debug)]
+pub enum DomainCommand {
+    AddEntity(String),
+    RemoveEntity(String),
+    AlterEntity(String, String),
+    RenameEntity(String, String),
+    AddAttribute(String, String, String),
+    RemoveAttribute(String, String),
+    AlterAttribute(String, String, String),
+    RenameAttribute(String, String),
+}
+
+#[derive(Debug)]
+pub enum XFlowCommand {
+    AddNode(String),
 }

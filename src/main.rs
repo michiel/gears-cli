@@ -64,7 +64,7 @@ fn add_project_files(path: &str) -> () {
 **/*.bk
 **/*.swp
 **/*.swo
-history.gears-project
+history.gears-shell
 local.json
 "#,
     );

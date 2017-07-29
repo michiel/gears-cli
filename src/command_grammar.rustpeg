@@ -1,4 +1,4 @@
-use shell::{Command, ModelComponent};
+use shell::{Command, ModelComponent, ComponentDslCommand, DomainCommand, XFlowCommand};
 
 pub expression -> Command
   = set
@@ -7,6 +7,7 @@ pub expression -> Command
   / destroy
   / help
   / sync
+  / component_dsl_command
 
 set -> Command
   = "set" _ key:label _ val:label {
@@ -49,3 +50,30 @@ _ -> ()
 
 space -> ()
   = " "
+
+component_dsl_command -> Command
+  = "with domain " domain_command:domain_command {
+    Command::Dsl(ComponentDslCommand::Domain(domain_command))
+  }
+  / "with xflow " xflow_command:xflow_command {
+    Command::Dsl(ComponentDslCommand::XFlow(xflow_command))
+  }
+
+domain_command -> DomainCommand
+  = "add" " " label:label {
+    DomainCommand::AddEntity(label.to_string())
+  }
+  / "remove" " " label:label {
+    DomainCommand::RemoveEntity(label.to_string())
+  }
+  / "entity" " " entity:label " " "add attribute" " " attr:label ":" attr_type:label {
+    DomainCommand::AddAttribute(entity.to_string(), attr.to_string(), attr_type.to_string())
+  }
+  / "entity" " " entity:label " " "remove attribute" " " attr:label {
+    DomainCommand::RemoveAttribute(entity.to_string(), attr.to_string())
+  }
+
+xflow_command -> XFlowCommand
+  = "add" " " label:label {
+    XFlowCommand::AddNode(label.to_string())
+  }
