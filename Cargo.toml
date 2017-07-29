@@ -30,4 +30,17 @@ peg = { version = "0.5" }
 # "gears:0.1.5" = { path = "/home/michiel/dev/github/gears-core-rust" }
 "gears:0.1.5" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
-
+[package.metadata.deb]
+maintainer = "Michiel Kalkman <michiel@nosuchtype.com>"
+copyright = "2017, Michiel Kalkman <michiel@nosuchtype..com>"
+license_file = ["LICENSE", "4"]
+extended_description = """\
+Gears CLI tool
+"""
+depends = "$auto"
+section = "utility"
+priority = "optional"
+assets = [
+    ["target/release/gears-cli", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/gears-cli/README", "644"],
+]
