@@ -54,6 +54,10 @@ impl<'a> ShellSession<'a> {
                 println!("<< sync");
                 self.run_command_sync();
             }
+            Command::Other(ref s) => {
+                use gears::dsl::command::GearsDsl;
+                self.model.doc.interpret_dsl(&s);
+            }
         }
         Ok(())
     }
@@ -124,4 +128,5 @@ pub enum Command {
     Help,
     Sync,
     Set(String, String),
+    Other(String),
 }

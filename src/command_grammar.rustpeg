@@ -4,6 +4,7 @@ pub expression -> Command
   = set
   / help
   / sync
+  / other
 
 set -> Command
   = ".set" _ key:label _ val:label {
@@ -11,10 +12,19 @@ set -> Command
   }
 
 help -> Command
- = ".help" { Command::Help }
+ = ".help" {
+   Command::Help
+ }
 
 sync -> Command
- = ".sync" { Command::Sync }
+ = ".sync" {
+   Command::Sync
+ }
+
+other -> Command
+  = s:$([A-Za-z0-9\_\ ]+) {
+    Command::Other(s.to_string())
+  }
 
 label -> String
   = label:$([A-Za-z0-9\_]+) {
