@@ -28,38 +28,41 @@ struct ShellSession<'a> {
 }
 
 impl<'a> ShellSession<'a> {
-    pub fn run_line(&mut self, line: &str) -> Result<(), ()> {
+    pub fn run_line(&mut self, line: &str) -> Result<(), String> {
         match command_grammar::expression(&line) {
             Ok(cmd) => {
-                self.run_command(&cmd);
-                Ok(())
+                debug!("run_line parsed to : {:?}", cmd);
+                self.run_command(&cmd)
             }
             Err(err) => {
-                println!("<< Expected : {:?}", err.expected);
-                Err(())
+                println!("<< Parsing error (shell) : {:?}", err);
+                let msg = format!("{:?}", err);
+                Err(msg)
             }
         }
     }
 
-    pub fn run_command(&mut self, cmd: &Command) -> Result<(), ()> {
+    pub fn run_command(&mut self, cmd: &Command) -> Result<(), String> {
         // println!("<< Running command");
         match *cmd {
+            Command::Nop => Ok(()),
             Command::Set(ref key, ref val) => {
                 println!("<< Setting {} to {}", key, val);
+                Ok(())
             }
             Command::Help => {
                 self.run_command_help();
+                Ok(())
             }
             Command::Sync => {
                 println!("<< sync");
-                self.run_command_sync();
+                self.run_command_sync()
             }
             Command::Other(ref s) => {
                 use gears::dsl::command::GearsDsl;
-                self.model.doc.interpret_dsl(&s);
+                self.model.doc.interpret_dsl(&s)
             }
         }
-        Ok(())
     }
 
     pub fn run_command_help(&self) -> () {
@@ -70,16 +73,18 @@ impl<'a> ShellSession<'a> {
         println!("<< Write commands are generate, destroy, sync");
     }
 
-    pub fn run_command_sync(&self) -> () {
+    pub fn run_command_sync(&self) -> Result<(), String> {
         match gears::util::fs::model_to_fs(
             &self.model.as_locale(&self.appstate.locale).unwrap(),
             &self.appstate.path_in,
         ) {
             Ok(_) => {
                 println!("<< sync OK");
+                Ok(())
             }
             Err(err) => {
                 println!("<< sync ERROR : {:?}", err);
+                Err(format!("{:?}", err))
             }
         }
     }
@@ -102,9 +107,15 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
         let readline = rl.readline(PROMPT);
         match readline {
             Ok(line) => {
+                debug!("readline input {:?}", line);
                 rl.add_history_entry(&line);
-                // println!("Line: {}", line);
-                shell_session.run_line(&line);
+                match shell_session.run_line(&line) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        println!("<< readline error '{:?}' - Error : {:?}", line, err);
+                        error!("readline, runline {:?}", err);
+                    }
+                };
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -125,6 +136,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
 
 #[derive(Debug)]
 pub enum Command {
+    Nop,
     Help,
     Sync,
     Set(String, String),

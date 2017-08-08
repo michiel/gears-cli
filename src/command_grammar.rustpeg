@@ -5,28 +5,31 @@ pub expression -> Command
   / help
   / sync
   / other
-  / #expected("A valid expression (set, help, sync, other)")
+  / nop
+
+nop -> Command
+  = newline { Command::Nop }
+  / "" { Command::Nop }
 
 set -> Command
-  = ".set" _ key:label _ val:label {
+  = "set" _ key:label _ val:label {
     Command::Set(key, val)
   }
 
 help -> Command
- = ".help" {
+ = "help" {
    Command::Help
  }
 
 sync -> Command
- = ".sync" {
+ = "sync" {
    Command::Sync
  }
 
 other -> Command
-  = s:$([A-Za-z0-9\_\ ]+) {
+  = s:$(.*) {
     Command::Other(s.to_string())
   }
-  / #expected("A valid GearsModel DSL command")
 
 label -> String
   = label:$([A-Za-z0-9\_]+) {
@@ -38,4 +41,9 @@ _ -> ()
 
 space -> ()
   = " "
+
+newline -> ()
+  = "\n"
+  / "\r"
+  / "\r\n"
 

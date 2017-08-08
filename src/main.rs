@@ -4,7 +4,7 @@ extern crate log;
 extern crate clap;
 extern crate rustyline;
 
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
 use std::fs::File;
 use std::path::Path;
