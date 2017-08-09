@@ -4,6 +4,7 @@ pub expression -> Command
   = set
   / help
   / sync
+  / structure
   / other
   / nop
 
@@ -19,6 +20,11 @@ set -> Command
 help -> Command
  = "help" {
    Command::Help
+ }
+
+structure -> Command
+ = "structure" {
+   Command::Structure
  }
 
 sync -> Command

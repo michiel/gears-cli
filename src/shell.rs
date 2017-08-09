@@ -58,6 +58,10 @@ impl<'a> ShellSession<'a> {
                 println!("<< sync");
                 self.run_command_sync()
             }
+            Command::Structure => {
+                println!("<< structure");
+                self.run_command_structure()
+            }
             Command::Other(ref s) => {
                 use gears::dsl::command::GearsDsl;
                 self.model.doc.interpret_dsl(&s)
@@ -87,6 +91,12 @@ impl<'a> ShellSession<'a> {
                 Err(format!("{:?}", err))
             }
         }
+    }
+
+    pub fn run_command_structure(&self) -> Result<(), String> {
+        use gears::dsl::command::GearsDsl;
+        println!("{}", &self.model.doc.to_text_dsl());
+        Ok(())
     }
 }
 
@@ -138,6 +148,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
 pub enum Command {
     Nop,
     Help,
+    Structure,
     Sync,
     Set(String, String),
     Other(String),
