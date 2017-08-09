@@ -4,7 +4,7 @@ extern crate log;
 extern crate clap;
 extern crate rustyline;
 
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
 use std::fs::File;
 use std::path::Path;
@@ -66,6 +66,7 @@ fn add_project_files(path: &str) -> () {
 **/*.swo
 history.gears-shell
 local.json
+out/
 "#,
     );
 
@@ -127,57 +128,82 @@ fn main() {
         .version("0.1.9")
         .author("Michiel Kalkman <michiel@nosuchtype.com")
         .about("CLI tool for working with gears-project models")
-        .arg(Arg::with_name("config")
-                 .short("c")
-                 .long("config")
-                 .value_name("FILE")
-                 .help("Sets a custom config file")
-                 .takes_value(true))
-        .arg(Arg::with_name("path")
-                 .short("p")
-                 .long("path")
-                 .value_name("path")
-                 .default_value(".")
-                 .help("Sets a project path")
-                 .takes_value(true))
-        .arg(Arg::with_name("output_path")
-                 .long("output-path")
-                 .value_name("output_path")
-                 .default_value(".")
-                 .help("Sets the output path")
-                 .takes_value(true))
-        .arg(Arg::with_name("locale")
-                 .short("l")
-                 .long("locale")
-                 .value_name("locale")
-                 .default_value("en_US")
-                 .help("Set the project locale")
-                 .takes_value(true))
-        .arg(Arg::with_name("input_format")
-                 .long("input-format")
-                 .value_name("input_format")
-                 .possible_values(&["json", "yaml"])
-                 .default_value("json")
-                 .help("Sets the input format")
-                 .takes_value(true))
-        .arg(Arg::with_name("output_format")
-                 .long("output-format")
-                 .value_name("output_format")
-                 .possible_values(&["json", "yaml"])
-                 .default_value("json")
-                 .help("Sets the output format")
-                 .takes_value(true))
-        .arg(Arg::with_name("v")
-                 .short("v")
-                 .multiple(true)
-                 .help("Sets the level of verbosity"))
-        .subcommand(SubCommand::with_name("shell").about("Run an interactive shell"))
-        .subcommand(SubCommand::with_name("init").about("Initialize a new project"))
-        .subcommand(SubCommand::with_name("export").about("Export an existing project"))
-        .subcommand(SubCommand::with_name("import").about("Import an existing project"))
-        .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
-        .subcommand(SubCommand::with_name("build").about("Build project artifacts"))
-        .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
+        .arg(
+            Arg::with_name("config")
+                .short("c")
+                .long("config")
+                .value_name("FILE")
+                .help("Sets a custom config file")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("path")
+                .short("p")
+                .long("path")
+                .value_name("path")
+                .default_value(".")
+                .help("Sets a project path")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("output_path")
+                .long("output-path")
+                .value_name("output_path")
+                .default_value("out")
+                .help("Sets the output path")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("locale")
+                .short("l")
+                .long("locale")
+                .value_name("locale")
+                .default_value("en_US")
+                .help("Set the project locale")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("input_format")
+                .long("input-format")
+                .value_name("input_format")
+                .possible_values(&["json", "yaml"])
+                .default_value("json")
+                .help("Sets the input format")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("output_format")
+                .long("output-format")
+                .value_name("output_format")
+                .possible_values(&["json", "yaml"])
+                .default_value("json")
+                .help("Sets the output format")
+                .takes_value(true),
+        )
+        .arg(Arg::with_name("v").short("v").multiple(true).help(
+            "Sets the level of verbosity",
+        ))
+        .subcommand(SubCommand::with_name("shell").about(
+            "Run an interactive shell",
+        ))
+        .subcommand(SubCommand::with_name("init").about(
+            "Initialize a new project",
+        ))
+        .subcommand(SubCommand::with_name("export").about(
+            "Export an existing project",
+        ))
+        .subcommand(SubCommand::with_name("import").about(
+            "Import an existing project",
+        ))
+        .subcommand(SubCommand::with_name("transform").about(
+            "Transform an existing project",
+        ))
+        .subcommand(SubCommand::with_name("build").about(
+            "Build project artifacts",
+        ))
+        .subcommand(SubCommand::with_name("validate").about(
+            "Validate an existing project",
+        ))
         .get_matches();
 
 
@@ -241,9 +267,11 @@ fn subcommand_validate(appstate: &AppState) -> () {
 
     if errors.len() > 0 {
         for error in &errors {
-            println!("Error '{}' - Path '{}'",
-                     error.message,
-                     error.paths.join(&path_sep));
+            println!(
+                "Error '{}' - Path '{}'",
+                error.message,
+                error.paths.join(&path_sep)
+            );
         }
     } else {
         println!("Model '{}' validates OK", model.id);
@@ -265,9 +293,11 @@ fn subcommand_transform(appstate: &AppState) -> () {
 }
 
 fn subcommand_build(appstate: &AppState) -> () {
-    info!("build: model in '{}', building assets in '{}'",
-          appstate.path_in,
-          appstate.path_out);
+    info!(
+        "build: model in '{}', building assets in '{}'",
+        appstate.path_in,
+        appstate.path_out
+    );
 
     let mut model = load_model(&appstate.path_in);
     model.pad_all_translations();
@@ -285,9 +315,10 @@ fn subcommand_import(appstate: &mut AppState) -> () {
         Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
     };
 
-    let _ = gears::util::fs::model_to_fs(&model.as_locale(&appstate.locale).unwrap(),
-                                         &appstate.path_in)
-        .unwrap();
+    let _ = gears::util::fs::model_to_fs(
+        &model.as_locale(&appstate.locale).unwrap(),
+        &appstate.path_in,
+    ).unwrap();
 
 }
 
