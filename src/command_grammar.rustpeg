@@ -13,22 +13,22 @@ nop -> Command
   / "" { Command::Nop }
 
 set -> Command
-  = "set" _ key:label _ val:label {
+  = "set" _ key:label _ val:label _ newline* {
     Command::Set(key, val)
   }
 
 help -> Command
- = "help" {
+ = "help" _ newline* {
    Command::Help
  }
 
 structure -> Command
- = "structure" {
+ = "structure" _ newline*{
    Command::Structure
  }
 
 sync -> Command
- = "sync" {
+ = "sync" _ newline* {
    Command::Sync
  }
 
