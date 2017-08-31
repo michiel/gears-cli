@@ -1,6 +1,6 @@
 [package]
 name = "gears-cli"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 description = "Gears CLI tool"
 documentation = "https://docs.rs/xflow"
@@ -27,7 +27,7 @@ features = [ "suggestions", "color", "wrap_help" ]
 peg = { version = "0.5" }
 
 [replace]
-# "gears:0.1.5" = { path = "/home/michiel/dev/github/gears-core-rust" }
+# "gears:0.1.5" = { path = "/home/michiel/dev/gears-project/gears-core-rust" }
 "gears:0.1.5" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
 [package.metadata.deb]
