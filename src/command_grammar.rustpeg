@@ -4,8 +4,6 @@ pub expression -> Command
   = set
   / help
   / sync
-  / structure
-  / other
   / nop
 
 nop -> Command
@@ -22,20 +20,10 @@ help -> Command
    Command::Help
  }
 
-structure -> Command
- = "structure" _ newline*{
-   Command::Structure
- }
-
 sync -> Command
  = "sync" _ newline* {
    Command::Sync
  }
-
-other -> Command
-  = s:$(.*) {
-    Command::Other(s.to_string())
-  }
 
 label -> String
   = label:$([A-Za-z0-9\_]+) {
