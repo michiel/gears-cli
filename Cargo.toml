@@ -32,9 +32,9 @@ peg = { version = "0.5" }
 
 [package.metadata.deb]
 maintainer = "Michiel Kalkman <michiel@nosuchtype.com>"
-copyright = "2017, Michiel Kalkman <michiel@nosuchtype..com>"
-license_file = ["LICENSE", "4"]
-extended_description = """\
+copyright = "2018, Michiel Kalkman <michiel@nosuchtype..com>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
 Gears CLI tool
 """
 depends = "$auto"
