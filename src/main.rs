@@ -3,6 +3,8 @@ extern crate gears;
 extern crate log;
 extern crate clap;
 extern crate rustyline;
+extern crate actix;
+extern crate actix_web;
 
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
@@ -17,6 +19,7 @@ mod app;
 use app::{AppState, Format};
 
 mod shell;
+mod server;
 
 fn load_model(path: &str) -> gears::structure::model::ModelDocument {
     let model = gears::util::fs::model_from_fs(path).unwrap();
@@ -198,11 +201,14 @@ fn main() {
         .subcommand(SubCommand::with_name("transform").about(
             "Transform an existing project",
         ))
+        .subcommand(SubCommand::with_name("validate").about(
+            "Validate an existing project",
+        ))
         .subcommand(SubCommand::with_name("build").about(
             "Build project artifacts",
         ))
-        .subcommand(SubCommand::with_name("validate").about(
-            "Validate an existing project",
+        .subcommand(SubCommand::with_name("serve").about(
+            "Run a web UI for project",
         ))
         .get_matches();
 
@@ -242,6 +248,7 @@ fn main() {
         Some("transform") => subcommand_transform(&appstate),
         Some("validate") => subcommand_validate(&appstate),
         Some("build") => subcommand_build(&appstate),
+        Some("serve") => subcommand_serve(&appstate),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
@@ -305,6 +312,19 @@ fn subcommand_build(appstate: &AppState) -> () {
 
     let _ = gears::util::fs::build_to_react_app(&model_locale, &appstate.path_out);
 
+}
+
+fn subcommand_serve(appstate: &AppState) -> () {
+    info!(
+        "serve: model in '{}'",
+        appstate.path_in
+    );
+
+    let mut model = load_model(&appstate.path_in);
+
+    model.pad_all_translations();
+    let model_locale = model.as_locale(&appstate.locale).unwrap();
+    server::serve()
 }
 
 fn subcommand_import(appstate: &mut AppState) -> () {
