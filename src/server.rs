@@ -57,25 +57,25 @@ impl Handler<GraphQLData> for GraphQLExecutor {
 }
 
 fn graphiql(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
-    let html = graphiql_source("http://127.0.0.1:8080/graphql");
+    let html = graphiql_source("/graphql");
     Ok(HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(html))
+       .content_type("text/html; charset=utf-8")
+       .body(html))
 }
 
 fn graphql(
     (st, data): (State<AppState>, Json<GraphQLData>),
-) -> FutureResponse<HttpResponse> {
+    ) -> FutureResponse<HttpResponse> {
     st.executor
         .send(data.0)
         .from_err()
         .and_then(|res| match res {
             Ok(user) => Ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .body(user)),
+                           .content_type("application/json")
+                           .body(user)),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
         })
-        .responder()
+    .responder()
 }
 
 pub fn serve(model: &ModelDocument) {
@@ -86,18 +86,17 @@ pub fn serve(model: &ModelDocument) {
     let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
     let model = model.clone();
 
-    // Start http server
     server::new(move || {
         App::with_state(AppState{
             executor: addr.clone(),
             model: model.clone(),
         })
-            // enable logger
-            .middleware(middleware::Logger::default())
+        .middleware(middleware::Logger::default())
             .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
             .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
+            .resource("/", |r| r.f(index))
     }).bind("127.0.0.1:8080")
-        .unwrap()
+    .unwrap()
         .start();
 
     println!("Started http server: 127.0.0.1:8080");
@@ -105,4 +104,9 @@ pub fn serve(model: &ModelDocument) {
 }
 
 
+fn index(req: &HttpRequest<AppState>) -> HttpResponse {
+    HttpResponse::Found()
+        .header("LOCATION", format!("/api/model/{}", req.state().model.id))
+        .finish()
+}
 
