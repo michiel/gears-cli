@@ -3,8 +3,16 @@ extern crate gears;
 extern crate log;
 extern crate clap;
 extern crate rustyline;
+
 extern crate actix;
 extern crate actix_web;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate juniper;
+extern crate futures;
 
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
@@ -12,6 +20,7 @@ use std::fs::File;
 use std::path::Path;
 use std::error::Error;
 use std::io::prelude::*;
+use gears::structure::model::ModelDocument;
 
 extern crate env_logger;
 
@@ -20,8 +29,9 @@ use app::{AppState, Format};
 
 mod shell;
 mod server;
+mod model_schema;
 
-fn load_model(path: &str) -> gears::structure::model::ModelDocument {
+fn load_model(path: &str) -> ModelDocument {
     let model = gears::util::fs::model_from_fs(path).unwrap();
     model
 }
@@ -320,11 +330,9 @@ fn subcommand_serve(appstate: &AppState) -> () {
         appstate.path_in
     );
 
-    let mut model = load_model(&appstate.path_in);
+    let model = load_model(&appstate.path_in);
 
-    model.pad_all_translations();
-    let model_locale = model.as_locale(&appstate.locale).unwrap();
-    server::serve()
+    server::serve(&model);
 }
 
 fn subcommand_import(appstate: &mut AppState) -> () {
