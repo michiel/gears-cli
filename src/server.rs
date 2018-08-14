@@ -15,8 +15,6 @@ use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use std::sync::Arc;
 
-use model_schema;
-
 use model_schema::create_schema;
 use model_schema::Schema;
 
@@ -24,6 +22,7 @@ use serde_json;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
+    model: ModelDocument,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -85,10 +84,14 @@ pub fn serve(model: &ModelDocument) {
 
     let schema = Arc::new(create_schema());
     let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
+    let model = model.clone();
 
     // Start http server
     server::new(move || {
-        App::with_state(AppState{executor: addr.clone()})
+        App::with_state(AppState{
+            executor: addr.clone(),
+            model: model.clone(),
+        })
             // enable logger
             .middleware(middleware::Logger::default())
             .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
