@@ -13,6 +13,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate juniper;
 extern crate futures;
+extern crate uuid;
 
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};

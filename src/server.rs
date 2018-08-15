@@ -4,11 +4,12 @@
 //! A simple example integrating juniper in actix-web
 
 use gears::structure::model::ModelDocument;
+use uuid::Uuid;
 
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
-    HttpResponse, Json, State, Responder,
+    HttpResponse, Json, State, Responder, http::Method,
 };
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
@@ -104,7 +105,31 @@ pub fn serve(model: &ModelDocument) {
         })
         .prefix("jsonapi")
             .middleware(middleware::Logger::default())
-            .resource("/model/{id}", |r| r.f(get_model_id))
+			.scope("/model", |model_scope| {
+				model_scope
+					.resource("", |r| {
+						r.method(Method::GET).f(get_models);
+						r.method(Method::POST).with(create_model);
+					})
+				.resource("/{model_id}", |r| {
+					r.method(Method::GET).f(get_model);
+					r.method(Method::PUT).with(update_model);
+					// r.method(Method::DELETE).f(get_model)
+				})
+				.nested("/{model_id}/pages", |page_scope| {
+					page_scope
+						.resource("", |r| {
+							r.method(Method::GET).f(get_pages);
+							r.method(Method::POST).f(get_model);
+						})
+					.resource("/{page_id}", |r| {
+						r.method(Method::GET).f(get_page);
+						// r.method(Method::PUT).with(get_model);
+						// r.method(Method::DELETE).with(get_model)
+					})
+				})
+			})
+
             .resource("/", |r| r.f(jsonapi_index))
             .resource("", |r| r.f(jsonapi_index));
 
@@ -122,7 +147,7 @@ pub fn serve(model: &ModelDocument) {
 }
 
 
-fn graphql_index(req: &HttpRequest<AppState>) -> HttpResponse {
+fn graphql_index(_req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Found()
         .header("LOCATION", "graphiql")
         .finish()
@@ -134,8 +159,51 @@ fn jsonapi_index(req: &HttpRequest<AppState>) -> HttpResponse {
         .finish()
 }
 
-fn get_model_id(req:&HttpRequest<AppState>) -> impl Responder {
-    let id = &req.match_info()["id"];
+//
+// Models
+
+fn get_models(req:&HttpRequest<AppState>) -> impl Responder {
+    format!("[{}]", &req.state().model.to_json())
+}
+
+fn get_model(req:&HttpRequest<AppState>) -> impl Responder {
+    let model_id = &req.match_info()["model_id"];
     format!("{}", &req.state().model.to_json())
+}
+
+fn create_model(model: Json<ModelDocument>) -> impl Responder {
+    format!("{}", model.to_json())
+}
+
+fn update_model(model: Json<ModelDocument>) -> impl Responder {
+    format!("{}", model.to_json())
+}
+
+//
+// Pages
+
+fn get_pages(req:&HttpRequest<AppState>) -> impl Responder {
+	let model_id = &req.match_info()["model_id"];
+	let model_uuid =  Uuid::parse_str(model_id);
+
+	format!("{}",
+			serde_json::to_string_pretty(
+				&req.state().model.body.pages
+				).unwrap()
+		   )
+}
+
+fn get_page(req:&HttpRequest<AppState>) -> impl Responder {
+    let model_id = &req.match_info()["model_id"];
+	let model_uuid =  Uuid::parse_str(model_id);
+
+    let page_id = &req.match_info()["page_id"];
+	let page_uuid =  Uuid::parse_str(page_id).unwrap();
+
+	format!("{}",
+			serde_json::to_string_pretty(
+				&req.state().model.get_page(&page_uuid).unwrap()
+				).unwrap()
+		   )
 }
 
