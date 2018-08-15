@@ -1,6 +1,20 @@
 use juniper::FieldResult;
 use juniper::RootNode;
 
+/*
+use gears::structure::model::ModelDocument;
+
+graphql_object!(ModelDocument: () as "Model" |&self| {
+    field id() -> &str {
+        self.id.as_str()
+    }
+
+    field name() -> &str {
+        self.name.as_str()
+    }
+});
+*/
+
 #[derive(GraphQLEnum)]
 enum Episode {
     NewHope,

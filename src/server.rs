@@ -8,7 +8,7 @@ use gears::structure::model::ModelDocument;
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
-    HttpResponse, Json, State,
+    HttpResponse, Json, State, Responder,
 };
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
@@ -57,7 +57,7 @@ impl Handler<GraphQLData> for GraphQLExecutor {
 }
 
 fn graphiql(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
-    let html = graphiql_source("/graphql");
+    let html = graphiql_source("/graphql/api");
     Ok(HttpResponse::Ok()
        .content_type("text/html; charset=utf-8")
        .body(html))
@@ -87,14 +87,32 @@ pub fn serve(model: &ModelDocument) {
     let model = model.clone();
 
     server::new(move || {
-        App::with_state(AppState{
+        let graphql_app = App::with_state(AppState{
             executor: addr.clone(),
             model: model.clone(),
         })
-        .middleware(middleware::Logger::default())
-            .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
+        .prefix("graphql")
+            .middleware(middleware::Logger::default())
+            .resource("/api", |r| r.method(http::Method::POST).with(graphql))
             .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
-            .resource("/", |r| r.f(index))
+            .resource("/", |r| r.f(graphql_index))
+            .resource("", |r| r.f(graphql_index));
+
+        let jsonapi_app = App::with_state(AppState{
+            executor: addr.clone(),
+            model: model.clone(),
+        })
+        .prefix("jsonapi")
+            .middleware(middleware::Logger::default())
+            .resource("/model/{id}", |r| r.f(get_model_id))
+            .resource("/", |r| r.f(jsonapi_index))
+            .resource("", |r| r.f(jsonapi_index));
+
+        vec![
+            graphql_app,
+            jsonapi_app
+        ]
+
     }).bind("127.0.0.1:8080")
     .unwrap()
         .start();
@@ -104,9 +122,20 @@ pub fn serve(model: &ModelDocument) {
 }
 
 
-fn index(req: &HttpRequest<AppState>) -> HttpResponse {
+fn graphql_index(req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Found()
-        .header("LOCATION", format!("/api/model/{}", req.state().model.id))
+        .header("LOCATION", "graphiql")
         .finish()
+}
+
+fn jsonapi_index(req: &HttpRequest<AppState>) -> HttpResponse {
+    HttpResponse::Found()
+        .header("LOCATION", format!("api/model/{}", req.state().model.id))
+        .finish()
+}
+
+fn get_model_id(req:&HttpRequest<AppState>) -> impl Responder {
+    let id = &req.match_info()["id"];
+    format!("{}", &req.state().model.to_json())
 }
 
