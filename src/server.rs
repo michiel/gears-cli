@@ -15,15 +15,18 @@ use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use std::sync::Arc;
+use std::path::Path;
 
 use model_schema::create_schema;
 use model_schema::Schema;
+use model_executor::FileSystemModelStore;
+use model_executor::ModelStore;
 
 use serde_json;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
-    model: ModelDocument,
+    model: FileSystemModelStore,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,12 +87,15 @@ pub fn serve(model: &ModelDocument) {
     let sys = actix::System::new("model-graphql");
 
     let schema = Arc::new(create_schema());
-    let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
-    let mut model = model.clone();
+    let addr_graphql = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
+
+    let path = Path::new(&"./");
+    let safe_path = format!("{}", path.display());
+    let model = FileSystemModelStore::new(&safe_path);
 
     server::new(move || {
 	let graphql_app = App::with_state(AppState{
-	    executor: addr.clone(),
+	    executor: addr_graphql.clone(),
 	    model: model.clone(),
 	})
 	.prefix("graphql")
@@ -105,7 +111,7 @@ pub fn serve(model: &ModelDocument) {
 	    });
 
 	let jsonapi_app = App::with_state(AppState{
-	    executor: addr.clone(),
+	    executor: addr_graphql.clone(),
 	    model: model.clone(),
 	})
 	.prefix("jsonapi")
@@ -121,6 +127,7 @@ pub fn serve(model: &ModelDocument) {
 		    r.method(Method::PUT).with(update_model);
 		    // r.method(Method::DELETE).f(get_model)
 		})
+		/*
 		.nested("/{model_id}/pages", |page_scope| {
 		    page_scope
 			.resource("", |r| {
@@ -145,6 +152,7 @@ pub fn serve(model: &ModelDocument) {
 			// r.method(Method::DELETE).with(get_page)
 		    })
 		})
+		*/
 	    })
 
 	.resource("/", |r| r.f(jsonapi_index))
@@ -179,7 +187,7 @@ fn graphql_index(_req: &HttpRequest<AppState>) -> HttpResponse {
 
 fn jsonapi_index(req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Found()
-	.header("LOCATION", format!("api/model/{}", req.state().model.id))
+	.header("LOCATION", format!("api/model/1"))
 	.finish()
 }
 
@@ -190,20 +198,34 @@ fn p404(req:&HttpRequest<AppState>) -> HttpResponse {
 // Models
 
 fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
-    HttpResponse::build(StatusCode::OK)
-	.content_type("application/json; charset=utf-8")
-	.body(
-	    format!("[{}]", &req.state().model.to_json())
-	    )
+    match &req.state().model.get(&"") {
+	Ok(res) => {
+	    HttpResponse::build(StatusCode::OK)
+		.content_type("application/json; charset=utf-8")
+		.body(
+		    format!("[{}]", res.to_json())
+		    )
+	},
+	Err(_) => {
+	    HttpResponse::build(StatusCode::NOT_FOUND).finish()
+	}
+    }
 }
 
 fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
     let model_id = &req.match_info()["model_id"];
-    HttpResponse::build(StatusCode::OK)
-	.content_type("application/json; charset=utf-8")
-	.body(
-	    format!("{}", &req.state().model.to_json())
-	    )
+    match &req.state().model.get(&model_id) {
+	Ok(res) => {
+	    HttpResponse::build(StatusCode::OK)
+		.content_type("application/json; charset=utf-8")
+		.body(
+		    format!("{}", res.to_json())
+		    )
+	},
+	Err(_) => {
+	    HttpResponse::build(StatusCode::NOT_FOUND).finish()
+	}
+    }
 }
 
 fn create_model(model: Json<ModelDocument>) -> HttpResponse {
@@ -216,6 +238,7 @@ fn update_model(model: Json<ModelDocument>) -> impl Responder {
     format!("{}", model.to_json())
 }
 
+/*
 //
 // Pages
 
@@ -272,3 +295,4 @@ fn get_xflow(req:&HttpRequest<AppState>) -> impl Responder {
 	   )
 }
 
+*/
