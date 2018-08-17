@@ -1,10 +1,8 @@
-use std::io::{self, Read};
-use std::fs::File;
-use std::path::Path;
-use std::error::Error;
-use std::io::prelude::*;
 use gears::structure::model::ModelDocument;
 use gears;
+
+use actix::prelude::*;
+use futures::Future;
 
 fn load_model(path: &str) -> Result<ModelDocument, InputError> {
     match gears::util::fs::model_from_fs(path) {
@@ -13,31 +11,9 @@ fn load_model(path: &str) -> Result<ModelDocument, InputError> {
     }
 }
 
-fn write_file(filename: &str, data: &str) -> () {
-    let path = Path::new(filename);
-    let display = path.display();
-
-    let mut file = match File::create(&path) {
-        Err(why) => {
-            error!("couldn't create {}: {}", display, why.description());
-            panic!("couldn't create {}: {}", display, why.description());
-        }
-        Ok(file) => file,
-    };
-
-    match file.write_all(data.as_bytes()) {
-        Err(why) => {
-            error!("couldn't write to {}: {}", display, why.description());
-            panic!("couldn't write to {}: {}", display, why.description());
-        }
-        Ok(_) => debug!("successfully wrote to {}", display),
-    }
-}
-
 enum InputError {
     IOError,
     BadFormat,
-    InvalidIdentifier,
 }
 
 trait ModelStore {
@@ -54,7 +30,6 @@ trait ModelStore {
 
     fn delete(&self, json: &str) -> Result<ModelDocument, InputError>;
 }
-
 
 struct FileSystemModelStore {
     root: String,
@@ -73,7 +48,7 @@ impl ModelStore for FileSystemModelStore {
         unimplemented!()
     }
 
-    fn get(&self, id: &str) -> Result<ModelDocument, InputError> {
+    fn get(&self, _id: &str) -> Result<ModelDocument, InputError> {
         load_model(&self.root)
     }
 
@@ -100,6 +75,31 @@ impl ModelStore for FileSystemModelStore {
 
     fn delete(&self, json: &str) -> Result<ModelDocument, InputError> {
         unimplemented!()
+    }
+}
+
+impl Actor for FileSystemModelStore {
+    type Context = SyncContext<Self>;
+
+    fn started(&mut self, ctx: &mut SyncContext<Self>) {
+        println!("Actor is alive");
+    }
+
+    fn stopped(&mut self, ctx: &mut SyncContext<Self>) {
+        println!("Actor is stopped");
+    }
+}
+
+struct ModelStoreList;
+
+impl Message for ModelStoreList {
+    type Result = Result<bool, InputError>;
+}
+
+impl Handler<ModelStoreList> for FileSystemModelStore {
+    type Result = Result<bool, InputError>;
+    fn handle(&mut self, msg: ModelStoreList, ctx: &mut SyncContext<Self>) -> Self::Result {
+        Ok(true)
     }
 }
 
