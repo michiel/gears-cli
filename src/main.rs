@@ -31,6 +31,7 @@ use app::{AppState, Format};
 mod shell;
 mod server;
 mod model_schema;
+mod model_executor;
 
 fn load_model(path: &str) -> ModelDocument {
     let model = gears::util::fs::model_from_fs(path).unwrap();

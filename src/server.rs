@@ -71,9 +71,9 @@ fn graphql(
 	.send(data.0)
 	.from_err()
 	.and_then(|res| match res {
-	    Ok(user) => Ok(HttpResponse::Ok()
+	    Ok(obj) => Ok(HttpResponse::Ok()
 			   .content_type("application/json")
-			   .body(user)),
+			   .body(obj)),
 	    Err(_) => Ok(HttpResponse::InternalServerError().into()),
 	})
     .responder()
@@ -85,7 +85,7 @@ pub fn serve(model: &ModelDocument) {
 
     let schema = Arc::new(create_schema());
     let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
-    let model = model.clone();
+    let mut model = model.clone();
 
     server::new(move || {
 	let graphql_app = App::with_state(AppState{
@@ -101,7 +101,7 @@ pub fn serve(model: &ModelDocument) {
 	    .default_resource(|r| {
 		r.method(Method::GET).f(p404);
 		r.route().filter(pred::Not(pred::Get())).f(
-		    |req| HttpResponse::MethodNotAllowed());
+		    |_| HttpResponse::MethodNotAllowed());
 	    });
 
 	let jsonapi_app = App::with_state(AppState{
@@ -197,13 +197,19 @@ fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
 	    )
 }
 
-fn get_model(req:&HttpRequest<AppState>) -> impl Responder {
+fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
     let model_id = &req.match_info()["model_id"];
-    format!("{}", &req.state().model.to_json())
+    HttpResponse::build(StatusCode::OK)
+	.content_type("application/json; charset=utf-8")
+	.body(
+	    format!("{}", &req.state().model.to_json())
+	    )
 }
 
-fn create_model(model: Json<ModelDocument>) -> impl Responder {
-    format!("{}", model.to_json())
+fn create_model(model: Json<ModelDocument>) -> HttpResponse {
+    HttpResponse::build(StatusCode::OK)
+	.content_type("application/json; charset=utf-8")
+	.body(format!("{}", model.to_json()))
 }
 
 fn update_model(model: Json<ModelDocument>) -> impl Responder {
