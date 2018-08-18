@@ -332,9 +332,9 @@ fn subcommand_serve(appstate: &AppState) -> () {
         appstate.path_in
     );
 
-    let model = load_model(&appstate.path_in);
+    // let model = load_model(&appstate.path_in);
 
-    server::serve(&model);
+    server::serve(&appstate.path_in);
 }
 
 fn subcommand_import(appstate: &mut AppState) -> () {

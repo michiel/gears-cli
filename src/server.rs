@@ -26,7 +26,7 @@ use serde_json;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
-    model: FileSystemModelStore,
+    modelstore: FileSystemModelStore,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -82,21 +82,23 @@ fn graphql(
     .responder()
 }
 
-pub fn serve(model: &ModelDocument) {
+pub fn serve(path: &str) {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     let sys = actix::System::new("model-graphql");
 
     let schema = Arc::new(create_schema());
     let addr_graphql = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
 
+    /*
     let path = Path::new(&"./");
     let safe_path = format!("{}", path.display());
-    let model = FileSystemModelStore::new(&safe_path);
+    */
+    let modelstore = FileSystemModelStore::new(&path);
 
     server::new(move || {
 	let graphql_app = App::with_state(AppState{
 	    executor: addr_graphql.clone(),
-	    model: model.clone(),
+	    modelstore: modelstore.clone(),
 	})
 	.prefix("graphql")
 	    .middleware(middleware::Logger::default())
@@ -112,7 +114,7 @@ pub fn serve(model: &ModelDocument) {
 
 	let jsonapi_app = App::with_state(AppState{
 	    executor: addr_graphql.clone(),
-	    model: model.clone(),
+	    modelstore: modelstore.clone(),
 	})
 	.prefix("jsonapi")
 	    .middleware(middleware::Logger::default())
@@ -198,7 +200,7 @@ fn p404(req:&HttpRequest<AppState>) -> HttpResponse {
 // Models
 
 fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
-    match &req.state().model.get(&"") {
+    match &req.state().modelstore.get(&"") {
 	Ok(res) => {
 	    HttpResponse::build(StatusCode::OK)
 		.content_type("application/json; charset=utf-8")
@@ -214,7 +216,7 @@ fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
 
 fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
     let model_id = &req.match_info()["model_id"];
-    match &req.state().model.get(&model_id) {
+    match &req.state().modelstore.get(&model_id) {
 	Ok(res) => {
 	    HttpResponse::build(StatusCode::OK)
 		.content_type("application/json; charset=utf-8")

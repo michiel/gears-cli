@@ -30,23 +30,10 @@ For general information, visit the project hub at
 
     gears-cli export-json | gears-cli import-json --  
 
-### Interactive shell
+## HTTP server
 
-    gears-cli shell
+    curl localhost:8080/jsonapi/model/1  | curl -v -H 'Content-Type: application/json' -X PUT --data-binary @- http://localhost:8080/jsonapi/model/1
 
-    << Running gears-shell
-    >> list xflow
-    XFlow: ID Uuid("606dc85d-9daf-4045-8b85-0c7ccb667c63") - "zork"
-    >> generate xflow my_first_xflow
-    XFlow: ID Uuid("5e0d1a30-9c48-489c-af2d-a34054c98316") - "my_first_xflow"
-    >> generate page my_first_page
-    Page: ID Uuid("fc016992-95ad-49aa-9cb4-9814ce803d9a") - "my_first_page"
-    >> generate translation es_ES
-    >> list translation
-    Translation: ID Uuid("0cab532f-3c5c-49a7-89c0-9132e14039a8") - "default" - "en_US"
-    Translation: ID Uuid("5f64834b-bfb4-4075-966d-0d8a4cfe6232") - "default" - "es_ES"
-    >> sync
+    curl localhost:8080/jsonapi/model/1  | jq '.body.xflows[1]'
 
-When using the interactive shell to make changes, remember that changes are **ONLY SAVED AFTER
-ISSUING A `sync` COMMAND**.
 
