@@ -82,6 +82,8 @@ fn graphql(
     .responder()
 }
 
+static CONTENT_TYPE_JSON: &'static str = "application/json; charset=utf-8";
+
 pub fn serve(path: &str) {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     let sys = actix::System::new("model-graphql");
@@ -126,7 +128,7 @@ pub fn serve(path: &str) {
 		    })
 		.resource("/{model_id}", |r| {
 		    r.method(Method::GET).f(get_model);
-		    r.method(Method::PUT).with(update_model);
+		    r.method(Method::PUT).f(update_model);
 		    // r.method(Method::DELETE).f(get_model)
 		})
 		/*
@@ -203,7 +205,7 @@ fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
     match &req.state().modelstore.get(&"") {
 	Ok(res) => {
 	    HttpResponse::build(StatusCode::OK)
-		.content_type("application/json; charset=utf-8")
+		.content_type(CONTENT_TYPE_JSON)
 		.body(
 		    format!("[{}]", res.to_json())
 		    )
@@ -219,7 +221,7 @@ fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
     match &req.state().modelstore.get(&model_id) {
 	Ok(res) => {
 	    HttpResponse::build(StatusCode::OK)
-		.content_type("application/json; charset=utf-8")
+		.content_type(CONTENT_TYPE_JSON)
 		.body(
 		    format!("{}", res.to_json())
 		    )
@@ -232,12 +234,26 @@ fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
 
 fn create_model(model: Json<ModelDocument>) -> HttpResponse {
     HttpResponse::build(StatusCode::OK)
-	.content_type("application/json; charset=utf-8")
+	.content_type(CONTENT_TYPE_JSON)
 	.body(format!("{}", model.to_json()))
 }
 
-fn update_model(model: Json<ModelDocument>) -> impl Responder {
-    format!("{}", model.to_json())
+fn update_model(req:&HttpRequest<AppState>) -> HttpResponse {
+    // format!("{}", model.to_json());
+    let model = ModelDocument::default();
+    match &req.state().modelstore.update(&model.to_json()) {
+	Ok(res) => {
+	    HttpResponse::build(StatusCode::OK)
+		.content_type(CONTENT_TYPE_JSON)
+		.body(
+		    format!("{}", res.to_json())
+		    )
+	},
+	Err(_) => {
+	    HttpResponse::build(StatusCode::NOT_FOUND).finish()
+	}
+    }
+
 }
 
 /*

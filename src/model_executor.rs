@@ -68,7 +68,12 @@ impl ModelStore for FileSystemModelStore {
     }
 
     fn update(&self, json: &str) -> Result<ModelDocument, InputError> {
-        unimplemented!()
+        info!("update: in directory {}", self.root);
+        let model = gears::structure::model::ModelDocument::from_json(&json);
+        match gears::util::fs::model_to_fs(&model, &self.root) {
+            Ok(_) => load_model(&self.root),
+            Err(_) => Err(InputError::IOError),
+        }
     }
 
     fn delete(&self, json: &str) -> Result<(), InputError> {
