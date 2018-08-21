@@ -33,9 +33,15 @@ mod server;
 mod model_schema;
 mod model_executor;
 
-fn load_model(path: &str) -> ModelDocument {
+fn load_model(path: &str) -> Result<ModelDocument, String> {
     let model = gears::util::fs::model_from_fs(path).unwrap();
-    model
+    match gears::util::fs::model_from_fs(path) {
+        Ok(model) => Ok(model),
+        Err(err) => {
+            error!("load_model : {:?}", err);
+            Err(format!("load_model : {:?}", err))
+        }
+    }
 }
 
 fn read_stdin() -> String {
@@ -100,7 +106,7 @@ It is recommended to initialize this project with `git`, though any VCS will do.
 
 ## Help
 
-Have the `gears-cli` tool installed. See 
+Have the `gears-cli` tool installed. See
 [http://github.com/gears-project/gears-cli](http://github.com/gears-project/gears-cli)
 
 For general information, visit the project hub at
@@ -116,20 +122,7 @@ For general information, visit the project hub at
 
     gears-cli shell
     << Running gears-shell
-	>> list xflow
-	XFlow: ID Uuid("606dc85d-9daf-4045-8b85-0c7ccb667c63") - "zork"
-	>> generate xflow my_first_xflow
-	XFlow: ID Uuid("5e0d1a30-9c48-489c-af2d-a34054c98316") - "my_first_xflow"
-	>> generate page my_first_page
-	Page: ID Uuid("fc016992-95ad-49aa-9cb4-9814ce803d9a") - "my_first_page"
-	>> generate translation es_ES
-	>> list translation
-	Translation: ID Uuid("0cab532f-3c5c-49a7-89c0-9132e14039a8") - "default" - "en_US"
-	Translation: ID Uuid("5f64834b-bfb4-4075-966d-0d8a4cfe6232") - "default" - "es_ES"
     >> sync
-
-When using the interactive shell to make changes, remember that changes are **ONLY SAVED AFTER
-ISSUING A `sync` COMMAND**.
 
 "#,
     );
@@ -274,26 +267,35 @@ fn subcommand_init(appstate: &AppState) -> () {
 
 fn subcommand_shell(appstate: &AppState) -> () {
     info!("shell: in directory {}", appstate.path_in);
-    let mut model = load_model(&appstate.path_in);
-    shell::shell(&mut model, &appstate);
+    match load_model(&appstate.path_in) {
+        Ok(mut model) => {
+            shell::shell(&mut model, &appstate);
+        },
+        Err(err) => {
+            error!("subcommand_shell : {:?}", err);
+        }
+    }
 }
 
 fn subcommand_validate(appstate: &AppState) -> () {
     info!("validate: model in '{}'", appstate.path_in);
-    let model = load_model(&appstate.path_in);
-    let path_sep = ";".to_owned();
-    let errors = gears::validation::common::validate_model(&model);
+    if let Ok(model) = load_model(&appstate.path_in) {
+        let path_sep = ";".to_owned();
+        let errors = gears::validation::common::validate_model(&model);
 
-    if errors.len() > 0 {
-        for error in &errors {
-            println!(
-                "Error '{}' - Path '{}'",
-                error.message,
-                error.paths.join(&path_sep)
-            );
+        if errors.len() > 0 {
+            for error in &errors {
+                println!(
+                    "Error '{}' - Path '{}'",
+                    error.message,
+                    error.paths.join(&path_sep)
+                );
+            }
+        } else {
+            println!("Model '{}' validates OK", model.id);
         }
     } else {
-        println!("Model '{}' validates OK", model.id);
+        error!("subcommand_validate : ERROR");
     }
 }
 
@@ -318,11 +320,14 @@ fn subcommand_build(appstate: &AppState) -> () {
         appstate.path_out
     );
 
-    let mut model = load_model(&appstate.path_in);
-    model.pad_all_translations();
-    let model_locale = model.as_locale(&appstate.locale).unwrap();
+    if let Ok(mut model) = load_model(&appstate.path_in) {
+        model.pad_all_translations();
+        let model_locale = model.as_locale(&appstate.locale).unwrap();
 
-    let _ = gears::util::fs::build_to_react_app(&model_locale, &appstate.path_out);
+        let _ = gears::util::fs::build_to_react_app(&model_locale, &appstate.path_out);
+    } else {
+        error!("subcommand_build : ERROR");
+    }
 
 }
 

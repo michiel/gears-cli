@@ -4,18 +4,16 @@
 //! A simple example integrating juniper in actix-web
 
 use gears::structure::model::ModelDocument;
-use uuid::Uuid;
 
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
-    HttpResponse, Json, State, Responder, http::Method, http::StatusCode, pred,
+    HttpResponse, Json, State, http::Method, http::StatusCode, pred,
 };
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use std::sync::Arc;
-use std::path::Path;
 
 use model_schema::create_schema;
 use model_schema::Schema;
