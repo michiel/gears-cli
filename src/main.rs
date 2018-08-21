@@ -22,6 +22,7 @@ use std::path::Path;
 use std::error::Error;
 use std::io::prelude::*;
 use gears::structure::model::ModelDocument;
+use gears::structure::common::ModelLoadError;
 
 extern crate env_logger;
 
@@ -303,8 +304,20 @@ fn subcommand_transform(appstate: &AppState) -> () {
     let buffer = read_stdin();
 
     let model = match appstate.format_in {
-        Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
-        Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
+        Format::YAML => match gears::structure::model::ModelDocument::from_yaml(&buffer) {
+            Ok(model) => model,
+            Err(err) => {
+                error!("transform error: {:?}", err);
+                return ()
+            }
+        }
+        Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
+            Ok(model) => model,
+            Err(err) => {
+                error!("transform error: {:?}", err);
+                return ()
+            }
+        }
     };
 
     match appstate.format_out {
@@ -346,8 +359,20 @@ fn subcommand_import(appstate: &mut AppState) -> () {
     let buffer = read_stdin();
 
     let model = match appstate.format_in {
-        Format::YAML => gears::structure::model::ModelDocument::from_yaml(&buffer),
-        Format::JSON => gears::structure::model::ModelDocument::from_json(&buffer),
+        Format::YAML => match gears::structure::model::ModelDocument::from_yaml(&buffer) {
+            Ok(model) => model,
+            Err(err) => {
+                error!("import error: {:?}", err);
+                return ()
+            }
+        }
+        Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
+            Ok(model) => model,
+            Err(err) => {
+                error!("import error: {:?}", err);
+                return ()
+            }
+        }
     };
 
     let _ = gears::util::fs::model_to_fs(

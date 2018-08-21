@@ -60,19 +60,27 @@ impl ModelStore for FileSystemModelStore {
 
     fn create(&self, json: &str) -> Result<ModelDocument, InputError> {
         info!("create: in directory {}", self.root);
-        let model = gears::structure::model::ModelDocument::from_json(&json);
-        match gears::util::fs::model_to_fs(&model, &self.root) {
-            Ok(_) => load_model(&self.root),
-            Err(_) => Err(InputError::IOError),
+        match gears::structure::model::ModelDocument::from_json(&json) {
+            Ok(model) => {
+                match gears::util::fs::model_to_fs(&model, &self.root) {
+                    Ok(_) => load_model(&self.root),
+                    Err(_) => Err(InputError::IOError),
+                }
+            }
+            Err(err) => Err(InputError::BadFormat)
         }
     }
 
     fn update(&self, json: &str) -> Result<ModelDocument, InputError> {
         info!("update: in directory {}", self.root);
-        let model = gears::structure::model::ModelDocument::from_json(&json);
-        match gears::util::fs::model_to_fs(&model, &self.root) {
-            Ok(_) => load_model(&self.root),
-            Err(_) => Err(InputError::IOError),
+        match gears::structure::model::ModelDocument::from_json(&json) {
+            Ok(model) => {
+                match gears::util::fs::model_to_fs(&model, &self.root) {
+                    Ok(_) => load_model(&self.root),
+                    Err(_) => Err(InputError::IOError),
+                }
+            }
+            Err(err) => Err(InputError::BadFormat)
         }
     }
 
