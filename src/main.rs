@@ -14,6 +14,7 @@ extern crate serde_derive;
 extern crate juniper;
 extern crate futures;
 extern crate uuid;
+extern crate bytes;
 
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};

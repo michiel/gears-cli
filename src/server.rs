@@ -8,7 +8,7 @@ use gears::structure::model::ModelDocument;
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
-    HttpResponse, Json, State, http::Method, http::StatusCode, pred,
+    HttpResponse, HttpMessage, Json, State, http::Method, http::StatusCode, pred,
 };
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
@@ -19,7 +19,8 @@ use model_schema::create_schema;
 use model_schema::Schema;
 use model_executor::FileSystemModelStore;
 use model_executor::ModelStore;
-
+use bytes::Bytes;
+use std::str;
 use serde_json;
 
 struct AppState {
@@ -236,22 +237,41 @@ fn create_model(model: Json<ModelDocument>) -> HttpResponse {
 	.body(format!("{}", model.to_json()))
 }
 
-fn update_model(req:&HttpRequest<AppState>) -> HttpResponse {
+fn update_model(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
     // format!("{}", model.to_json());
-    let model = ModelDocument::default();
-    match &req.state().modelstore.update(&model.to_json()) {
-	Ok(res) => {
-	    HttpResponse::build(StatusCode::OK)
-		.content_type(CONTENT_TYPE_JSON)
-		.body(
-		    format!("{}", res.to_json())
-		    )
-	},
-	Err(_) => {
-	    HttpResponse::build(StatusCode::NOT_FOUND).finish()
-	}
-    }
 
+    let req = req.clone();
+    req
+	.body()
+	.from_err()
+	.and_then(move |bytes: Bytes| {
+	    match str::from_utf8(&bytes) {
+		Ok(body) => {
+		    // println!("==== BODY ==== {:?}", body);
+		    match &req.state().modelstore.update(&body) {
+			Ok(res) => {
+			    Ok(HttpResponse::build(StatusCode::OK)
+			       .content_type(CONTENT_TYPE_JSON)
+			       .body( format!("{}", res.to_json()))
+			      )
+			},
+			Err(err) => {
+			    Ok(HttpResponse::build(StatusCode::BAD_REQUEST)
+			       .content_type(CONTENT_TYPE_JSON)
+			       .body( format!("{:?}", err))
+			      )
+			}
+		    }
+		},
+		Err(_) => {
+		    Ok(HttpResponse::build(StatusCode::BAD_REQUEST)
+		       .content_type(CONTENT_TYPE_JSON)
+		       .body(format!("Invalid JSON"))
+		      )
+		}
+	    }
+	})
+    .responder()
 }
 
 /*

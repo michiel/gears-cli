@@ -11,9 +11,10 @@ fn load_model(path: &str) -> Result<ModelDocument, InputError> {
     }
 }
 
+#[derive(Debug)]
 pub enum InputError {
     IOError,
-    BadFormat,
+    BadFormat(String),
 }
 
 pub trait ModelStore {
@@ -54,7 +55,10 @@ impl ModelStore for FileSystemModelStore {
         info!("init: in directory {}", self.root);
         match gears::util::fs::init_new_model_dir(&self.root) {
             Ok(_) => load_model(&self.root),
-            Err(_) => Err(InputError::BadFormat),
+            Err(err) => {
+                let msg = format!("{:?}", err);
+                Err(InputError::BadFormat(msg))
+            },
         }
     }
 
@@ -67,7 +71,7 @@ impl ModelStore for FileSystemModelStore {
                     Err(_) => Err(InputError::IOError),
                 }
             }
-            Err(err) => Err(InputError::BadFormat)
+            Err(err) => Err(InputError::BadFormat(format!("{:?}", err)))
         }
     }
 
@@ -80,7 +84,7 @@ impl ModelStore for FileSystemModelStore {
                     Err(_) => Err(InputError::IOError),
                 }
             }
-            Err(err) => Err(InputError::BadFormat)
+            Err(err) => Err(InputError::BadFormat(format!("{:?}", err)))
         }
     }
 
