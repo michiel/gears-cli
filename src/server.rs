@@ -15,6 +15,7 @@ use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use std::sync::Arc;
 
+use gears;
 use model_schema::create_schema;
 use model_schema::Schema;
 use model_executor::FileSystemModelStore;
@@ -90,11 +91,13 @@ pub fn serve(path: &str) {
     let schema = Arc::new(create_schema());
     let addr_graphql = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
 
-    /*
-    let path = Path::new(&"./");
-    let safe_path = format!("{}", path.display());
-    */
-    let modelstore = FileSystemModelStore::new(&path);
+    let modelstore = match FileSystemModelStore::new(&path) {
+	Ok(res) => res,
+	Err(_) => {
+	    error!("Unable to initialize model. Is this a model direcory?");
+	    return ()
+	}
+    };
 
     server::new(move || {
 	let graphql_app = App::with_state(AppState{
@@ -206,7 +209,7 @@ fn get_models(req:&HttpRequest<AppState>) -> HttpResponse {
 	    HttpResponse::build(StatusCode::OK)
 		.content_type(CONTENT_TYPE_JSON)
 		.body(
-		    format!("[{}]", res.to_json())
+		    format!("[{}]", res.to_json_compact())
 		    )
 	},
 	Err(_) => {
@@ -222,7 +225,7 @@ fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
 	    HttpResponse::build(StatusCode::OK)
 		.content_type(CONTENT_TYPE_JSON)
 		.body(
-		    format!("{}", res.to_json())
+		    format!("{}", res.to_json_compact())
 		    )
 	},
 	Err(_) => {
@@ -234,7 +237,7 @@ fn get_model(req:&HttpRequest<AppState>) -> HttpResponse {
 fn create_model(model: Json<ModelDocument>) -> HttpResponse {
     HttpResponse::build(StatusCode::OK)
 	.content_type(CONTENT_TYPE_JSON)
-	.body(format!("{}", model.to_json()))
+	.body(format!("{}", model.to_json_compact()))
 }
 
 fn update_model(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
@@ -252,7 +255,7 @@ fn update_model(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
 			Ok(res) => {
 			    Ok(HttpResponse::build(StatusCode::OK)
 			       .content_type(CONTENT_TYPE_JSON)
-			       .body( format!("{}", res.to_json()))
+			       .body( format!("{}", res.to_json_compact()))
 			      )
 			},
 			Err(err) => {

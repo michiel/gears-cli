@@ -1,4 +1,5 @@
 use gears::structure::model::ModelDocument;
+use gears::structure::common::ModelLoadError;
 use gears;
 
 use actix::prelude::*;
@@ -32,9 +33,14 @@ pub struct FileSystemModelStore {
 }
 
 impl FileSystemModelStore {
-    pub fn new(path: &str) -> Self {
-        FileSystemModelStore {
-            root: path.to_owned()
+    pub fn new(path: &str) -> Result<Self, ModelLoadError> {
+        match load_model(&path) {
+            Ok(_) => {
+                Ok(FileSystemModelStore {
+                    root: path.to_owned()
+                })
+            },
+            Err(err) => Err(ModelLoadError::BadStructure("Unable to init".to_owned()))
         }
     }
 }
