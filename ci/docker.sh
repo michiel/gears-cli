@@ -17,7 +17,7 @@ main() {
 
 echo "Checking for TARGET - $TARGET"
 # if [ "$TARGET" == "x86_64-unknown-linux-musl" ] && [ -z $TRAVIS_TAG ]; then
-if [ "$TARGET" == "x86_64-unknown-linux-musl" ]; then
+if [ "$TARGET" = "x86_64-unknown-linux-musl" ]; then
     echo "TARGET matched for docker build"
     main
 else
