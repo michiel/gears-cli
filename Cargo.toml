@@ -1,6 +1,6 @@
 [package]
 name = "gears-cli"
-version = "0.1.11"
+version = "0.1.12"
 authors = ["Michiel Kalkman <michiel@nosuchtype.com>"]
 description = "Gears CLI tool"
 documentation = "https://docs.rs/xflow"
@@ -13,10 +13,19 @@ license = "MIT"
 build = "build.rs"
 
 [dependencies]
-gears = "0.1.5"
+gears = "0.1.6"
 log = "0.4"
 env_logger = "0.5"
 rustyline = "1.0"
+actix = "0.7"
+actix-web = { version = "0.7",  default-features = false }
+futures = "0.1"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+juniper = "0.9.2"
+bytes = { version = "0.4", features = ["serde"] }
+uuid = { version = "0.6", features = ["serde", "v4"] }
 
 [dependencies.clap]
 version = "~2.32.0"
@@ -26,15 +35,15 @@ features = [ "suggestions", "color", "wrap_help" ]
 [build-dependencies]
 peg = { version = "0.5" }
 
-[replace]
-# "gears:0.1.5" = { path = "/home/michiel/dev/gears-project/gears-core-rust" }
-"gears:0.1.5" = { git = 'https://github.com/gears-project/gears-core-rust' }
+# [replace]
+# "gears:0.1.6" = { path = "/home/michiel/dev/gears-project/gears-core-rust" }
+# "gears:0.1.6" = { git = 'https://github.com/gears-project/gears-core-rust' }
 
 [package.metadata.deb]
 maintainer = "Michiel Kalkman <michiel@nosuchtype.com>"
-copyright = "2017, Michiel Kalkman <michiel@nosuchtype..com>"
-license_file = ["LICENSE", "4"]
-extended_description = """\
+copyright = "2018, Michiel Kalkman <michiel@nosuchtype..com>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
 Gears CLI tool
 """
 depends = "$auto"
