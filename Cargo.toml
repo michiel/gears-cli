@@ -16,7 +16,7 @@ build = "build.rs"
 gears = "0.1.6"
 log = "0.4"
 env_logger = "0.5"
-rustyline = "1.0"
+rustyline = "2.0"
 actix = "0.7"
 actix-web = { version = "0.7",  default-features = false }
 futures = "0.1"
