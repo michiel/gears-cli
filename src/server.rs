@@ -7,89 +7,25 @@ use gears::structure::model::ModelDocument;
 
 use actix::prelude::*;
 use actix_web::{
-    http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
-    HttpResponse, HttpMessage, Json, State, http::Method, http::StatusCode, pred,
+    middleware, server, App, AsyncResponder, FutureResponse, HttpRequest,
+    HttpResponse, HttpMessage, Json, http::Method, http::StatusCode, pred,
 };
 use futures::future::Future;
-use juniper::http::graphiql::graphiql_source;
-use juniper::http::GraphQLRequest;
-use std::sync::Arc;
 
-use gears;
-use model_schema::create_schema;
-use model_schema::Schema;
 use model_executor::FileSystemModelStore;
 use model_executor::ModelStore;
 use bytes::Bytes;
 use std::str;
-use serde_json;
 
 struct AppState {
-    executor: Addr<GraphQLExecutor>,
     modelstore: FileSystemModelStore,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct GraphQLData(GraphQLRequest);
-
-impl Message for GraphQLData {
-    type Result = Result<String, Error>;
-}
-
-pub struct GraphQLExecutor {
-    schema: Arc<Schema>,
-}
-
-impl GraphQLExecutor {
-    fn new(schema: Arc<Schema>) -> GraphQLExecutor {
-	GraphQLExecutor { schema: schema }
-    }
-}
-
-impl Actor for GraphQLExecutor {
-    type Context = SyncContext<Self>;
-}
-
-impl Handler<GraphQLData> for GraphQLExecutor {
-    type Result = Result<String, Error>;
-
-    fn handle(&mut self, msg: GraphQLData, _: &mut Self::Context) -> Self::Result {
-	let res = msg.0.execute(&self.schema, &());
-	let res_text = serde_json::to_string(&res)?;
-	Ok(res_text)
-    }
-}
-
-fn graphiql(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
-    let html = graphiql_source("/graphql/api");
-    Ok(HttpResponse::Ok()
-       .content_type("text/html; charset=utf-8")
-       .body(html))
-}
-
-fn graphql(
-    (st, data): (State<AppState>, Json<GraphQLData>),
-    ) -> FutureResponse<HttpResponse> {
-    st.executor
-	.send(data.0)
-	.from_err()
-	.and_then(|res| match res {
-	    Ok(obj) => Ok(HttpResponse::Ok()
-			   .content_type("application/json")
-			   .body(obj)),
-	    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-	})
-    .responder()
 }
 
 static CONTENT_TYPE_JSON: &'static str = "application/json; charset=utf-8";
 
 pub fn serve(path: &str) {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
-    let sys = actix::System::new("model-graphql");
-
-    let schema = Arc::new(create_schema());
-    let addr_graphql = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
+    let sys = actix::System::new("model-jsonapi");
 
     let modelstore = match FileSystemModelStore::new(&path) {
 	Ok(res) => res,
@@ -100,24 +36,8 @@ pub fn serve(path: &str) {
     };
 
     server::new(move || {
-	let graphql_app = App::with_state(AppState{
-	    executor: addr_graphql.clone(),
-	    modelstore: modelstore.clone(),
-	})
-	.prefix("graphql")
-	    .middleware(middleware::Logger::default())
-	    .resource("/api", |r| r.method(http::Method::POST).with(graphql))
-	    .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
-	    .resource("/", |r| r.f(graphql_index))
-	    .resource("", |r| r.f(graphql_index))
-	    .default_resource(|r| {
-		r.method(Method::GET).f(p404);
-		r.route().filter(pred::Not(pred::Get())).f(
-		    |_| HttpResponse::MethodNotAllowed());
-	    });
 
 	let jsonapi_app = App::with_state(AppState{
-	    executor: addr_graphql.clone(),
 	    modelstore: modelstore.clone(),
 	})
 	.prefix("jsonapi")
@@ -168,11 +88,10 @@ pub fn serve(path: &str) {
 	    .default_resource(|r| {
 		r.method(Method::GET).f(p404);
 		r.route().filter(pred::Not(pred::Get())).f(
-		    |req| HttpResponse::MethodNotAllowed());
+		    |_req| HttpResponse::MethodNotAllowed());
 	    });
 
 	vec![
-	    graphql_app,
 	    jsonapi_app
 	]
 
@@ -185,19 +104,13 @@ pub fn serve(path: &str) {
 }
 
 
-fn graphql_index(_req: &HttpRequest<AppState>) -> HttpResponse {
-    HttpResponse::Found()
-	.header("LOCATION", "graphiql")
-	.finish()
-}
-
-fn jsonapi_index(req: &HttpRequest<AppState>) -> HttpResponse {
+fn jsonapi_index(_req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::Found()
 	.header("LOCATION", format!("api/model/1"))
 	.finish()
 }
 
-fn p404(req:&HttpRequest<AppState>) -> HttpResponse {
+fn p404(_req:&HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::build(StatusCode::NOT_FOUND).finish()
 }
 //

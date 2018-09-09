@@ -10,8 +10,6 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate juniper;
 extern crate futures;
 extern crate uuid;
 extern crate bytes;
@@ -32,7 +30,6 @@ use app::{AppState, Format};
 
 mod shell;
 mod server;
-mod model_schema;
 mod model_executor;
 
 fn load_model(path: &str) -> Result<ModelDocument, String> {
