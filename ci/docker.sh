@@ -9,6 +9,8 @@ main() {
     echo $TAG
     echo $TRAVIS_COMMIT
     # - docker build -f Dockerfile -t $REPO:$COMMIT .
+    rm -rf ~/.cargo/registry
+    rm -rf ~/.cargo/git
     docker build . -f Dockerfile -t $REPO:$TRAVIS_COMMIT
     docker tag $REPO:$TRAVIS_COMMIT $REPO:$TAG
     docker tag $REPO:$TRAVIS_COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
