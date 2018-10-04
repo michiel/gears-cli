@@ -87,6 +87,10 @@ branches:
 notifications:
   - provider: Email
     on_build_success: false
+  - provider: GitHubPullRequest
+    auth_token:
+    secure: 2ecz1qX9JHGbQ3H60EWdfyzNlR/Let5Et+1FSTlIpOjIkJJHvm9ApywwXtDirm4E
+    template: "{{#passed}}:white_check_ ..."
 
 # Building is done in the test phase, so we disable Appveyor's build phase.
 build: false
