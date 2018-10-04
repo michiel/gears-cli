@@ -12,8 +12,8 @@ use actix_web::{
 };
 use futures::future::Future;
 
-use model_executor::FileSystemModelStore;
-use model_executor::ModelStore;
+use modelstore::filesystem::FileSystemModelStore;
+use modelstore::model_executor::ModelStore;
 use bytes::Bytes;
 use std::str;
 

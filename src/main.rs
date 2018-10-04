@@ -30,7 +30,7 @@ use app::{AppState, Format};
 
 mod shell;
 mod server;
-mod model_executor;
+mod modelstore;
 
 fn load_model(path: &str) -> Result<ModelDocument, String> {
     let model = gears::util::fs::model_from_fs(path).unwrap();
