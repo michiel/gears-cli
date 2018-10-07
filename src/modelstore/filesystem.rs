@@ -1,30 +1,16 @@
 use gears::structure::model::ModelDocument;
 use gears::structure::common::ModelLoadError;
+use futures::Future;
+use actix::prelude::*;
 use gears;
 
-use actix::prelude::*;
-use futures::Future;
+use super::model_executor::{ModelStore, InputError};
 
 fn load_model(path: &str) -> Result<ModelDocument, InputError> {
     match gears::util::fs::model_from_fs(path) {
         Ok(model) => Ok(model),
         Err(_) => Err(InputError::IOError)
     }
-}
-
-#[derive(Debug)]
-pub enum InputError {
-    IOError,
-    BadFormat(String),
-}
-
-pub trait ModelStore {
-    fn list(&self) -> Result<Vec<ModelDocument>, InputError>;
-    fn get(&self, id: &str) -> Result<ModelDocument, InputError>;
-    fn new(&self) -> Result<ModelDocument, InputError>;
-    fn create(&self, json: &str) -> Result<ModelDocument, InputError>;
-    fn update(&self, json: &str) -> Result<ModelDocument, InputError>;
-    fn delete(&self, json: &str) -> Result<(), InputError>;
 }
 
 #[derive(Clone)]
