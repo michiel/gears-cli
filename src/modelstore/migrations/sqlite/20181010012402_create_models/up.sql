@@ -1,0 +1,4 @@
+CREATE TABLE models (
+  id INTEGER NOT NULL PRIMARY KEY,
+  doc TEXT NOT NULL,
+)

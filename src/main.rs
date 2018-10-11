@@ -14,6 +14,9 @@ extern crate futures;
 extern crate uuid;
 extern crate bytes;
 
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_migrations;
+
 use clap::{Arg, App, SubCommand};
 use std::io::{self, Read};
 use std::fs::File;
