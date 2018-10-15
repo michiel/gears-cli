@@ -19,17 +19,23 @@ pub struct AppState {
 
 #[derive(Debug, Clone)]
 pub enum Storage {
-    Filesystem,
-    Sqlite,
+    Filesystem(String),
+    Sqlite(String),
 }
 
 impl Storage {
     pub fn from_str(s:&str) -> Self {
         debug!("Storage::from_str : Connection string is '{}'", s);
         if s.starts_with("sqlite:") {
-            Storage::Sqlite
+            Storage::Sqlite(Self::get_path(s, 6))
         } else {
-            Storage::Filesystem
+            Storage::Filesystem(Self::get_path(s, 0))
         }
+    }
+
+    fn get_path(s:&str, len:usize) -> String {
+        let res = s.chars().skip(len).take(s.chars().count() - len).collect();
+        debug!("Storage::get_path : Path string is '{}'", res);
+        res
     }
 }
