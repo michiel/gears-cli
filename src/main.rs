@@ -29,7 +29,7 @@ use gears::structure::common::ModelLoadError;
 extern crate env_logger;
 
 mod app;
-use app::{AppState, Format};
+use app::{AppState, Format, Storage};
 
 mod shell;
 mod server;
@@ -190,6 +190,22 @@ fn main() {
                 .help("Sets the output format")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("input_storage")
+                .long("input-storage")
+                .value_name("input_storage")
+                .default_value("fs:///./")
+                .help("Sets the input storage")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("output_storage")
+                .long("output-storage")
+                .value_name("output_storage")
+                .default_value("fs:///./")
+                .help("Sets the output storage")
+                .takes_value(true),
+        )
         .arg(Arg::with_name("v").short("v").multiple(true).help(
             "Sets the level of verbosity",
         ))
@@ -236,6 +252,9 @@ fn main() {
         Format::JSON
     };
 
+    let input_storage = Storage::from_str(matches.value_of("input_storage").unwrap_or("fs://"));
+    let output_storage = Storage::from_str(matches.value_of("output_storage").unwrap_or("fs://:"));
+
     let locale = matches.value_of("locale").unwrap_or("en_US");
 
     let mut appstate = AppState {
@@ -245,6 +264,8 @@ fn main() {
         path_out: output_path.to_string(),
         format_in: input_format.clone(),
         format_out: output_format.clone(),
+        storage_in: input_storage.clone(),
+        storage_out: output_storage.clone(),
     };
 
     match matches.subcommand_name() {

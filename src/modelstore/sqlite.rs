@@ -10,14 +10,23 @@ use diesel::prelude::*;
 use super::model_executor::{ModelStore, InputError};
 use super::sqlite_schema;
 
-#[derive(Clone)]
 pub struct SQLliteModelStore {
     root: String,
     connection: SqliteConnection
 }
 
 impl SQLliteModelStore {
-    pub fn fnord(path: &str) -> Result<Self, ModelLoadError> {
+    pub fn build(path: &str) -> Result<Self, ModelLoadError> {
+
+        if !path.starts_with("sqlite://") {
+            panic!("Connection string '{}' is not a sqlite URL", path);
+        }
+
+        if !::std::path::Path::new(path).exists() {
+            println!("SQLlite database: {} does not exist, creating", path);
+        } else {
+            println!("SQLlite database: {} exists, using", path);
+        }
 
         match SqliteConnection::establish(path) {
             Ok(conn) => {
