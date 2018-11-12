@@ -15,7 +15,7 @@ build = "build.rs"
 [dependencies]
 gears = "0.1.6"
 log = "0.4"
-env_logger = "0.5"
+env_logger = "0.6"
 rustyline = "1.0"
 actix = "0.7"
 actix-web = { version = "0.7",  default-features = false }
