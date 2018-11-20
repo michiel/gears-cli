@@ -105,7 +105,7 @@ pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
         match readline {
             Ok(line) => {
                 debug!("readline input {:?}", line);
-                rl.add_history_entry(&line);
+                rl.add_history_entry(line.as_ref());
                 match shell_session.run_line(&line) {
                     Ok(_) => {}
                     Err(err) => {
