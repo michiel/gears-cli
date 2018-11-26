@@ -36,4 +36,8 @@ For general information, visit the project hub at
 
     curl localhost:8080/jsonapi/model/1  | jq '.body.xflows[1]'
 
+## Docker
+
+    docker run -p 8080:8080 --expose 8080 -v "/tmp/x3:/project" -e RUST_LOG=info gearsproject/gears-cli:latest
+
 
