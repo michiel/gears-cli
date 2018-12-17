@@ -1,4 +1,4 @@
-dist: xenial
+dist: trusty
 language: rust
 services: docker
 sudo: required
