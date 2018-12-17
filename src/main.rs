@@ -10,27 +10,29 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate bytes;
 extern crate futures;
 extern crate uuid;
-extern crate bytes;
 
-use clap::{Arg, App, SubCommand};
-use std::io::{self, Read};
-use std::fs::File;
-use std::path::Path;
-use std::error::Error;
-use std::io::prelude::*;
-use gears::structure::model::ModelDocument;
+extern crate actix_web_middleware_opa;
+
+use clap::{App, Arg, SubCommand};
 use gears::structure::common::ModelLoadError;
+use gears::structure::model::ModelDocument;
+use std::error::Error;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::{self, Read};
+use std::path::Path;
 
 extern crate env_logger;
 
 mod app;
-use app::{AppState, Format};
+use app::{AppState, Format, ServerConfig};
 
-mod shell;
-mod server;
 mod modelstore;
+mod server;
+mod shell;
 
 fn load_model(path: &str) -> Result<ModelDocument, String> {
     let model = gears::util::fs::model_from_fs(path).unwrap();
@@ -51,7 +53,6 @@ fn read_stdin() -> String {
     handle.read_to_string(&mut buffer).unwrap();
     buffer
 }
-
 
 fn write_file(filename: &str, data: &str) -> () {
     let path = Path::new(filename);
@@ -74,9 +75,7 @@ fn write_file(filename: &str, data: &str) -> () {
     }
 }
 
-
 fn add_project_files(path: &str) -> () {
-
     write_file(
         &(format!("{}/.gitignore", path)),
         r#"**/*tmp
@@ -125,7 +124,6 @@ For general information, visit the project hub at
 
 "#,
     );
-
 }
 
 fn main() {
@@ -187,35 +185,30 @@ fn main() {
                 .help("Sets the output format")
                 .takes_value(true),
         )
-        .arg(Arg::with_name("v").short("v").multiple(true).help(
-            "Sets the level of verbosity",
-        ))
-        .subcommand(SubCommand::with_name("shell").about(
-            "Run an interactive shell",
-        ))
-        .subcommand(SubCommand::with_name("init").about(
-            "Initialize a new project",
-        ))
-        .subcommand(SubCommand::with_name("export").about(
-            "Export an existing project",
-        ))
-        .subcommand(SubCommand::with_name("import").about(
-            "Import an existing project",
-        ))
-        .subcommand(SubCommand::with_name("transform").about(
-            "Transform an existing project",
-        ))
-        .subcommand(SubCommand::with_name("validate").about(
-            "Validate an existing project",
-        ))
-        .subcommand(SubCommand::with_name("build").about(
-            "Build project artifacts",
-        ))
-        .subcommand(SubCommand::with_name("serve").about(
-            "Run a web UI for project",
-        ))
+        .arg(
+            Arg::with_name("v")
+                .short("v")
+                .multiple(true)
+                .help("Sets the level of verbosity"),
+        )
+        .subcommand(SubCommand::with_name("shell").about("Run an interactive shell"))
+        .subcommand(SubCommand::with_name("init").about("Initialize a new project"))
+        .subcommand(SubCommand::with_name("export").about("Export an existing project"))
+        .subcommand(SubCommand::with_name("import").about("Import an existing project"))
+        .subcommand(SubCommand::with_name("transform").about("Transform an existing project"))
+        .subcommand(SubCommand::with_name("validate").about("Validate an existing project"))
+        .subcommand(SubCommand::with_name("build").about("Build project artifacts"))
+        .subcommand(
+            SubCommand::with_name("serve")
+                .about("Run a HTTP REST API for project")
+                .arg(
+                    Arg::with_name("opa-url")
+                        .long("opa-url")
+                        .help("Sets the OPA url")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
-
 
     let config = matches.value_of("config").unwrap_or("project.conf");
     let path = matches.value_of("path").unwrap_or(".");
@@ -235,6 +228,24 @@ fn main() {
 
     let locale = matches.value_of("locale").unwrap_or("en_US");
 
+    let server_config = if let Some(matches) = matches.subcommand_matches("serve") {
+        match matches.value_of("opa-url") {
+            Some(url) => ServerConfig {
+                enable_opa: true,
+                opa_url: Some(url.to_string()),
+            },
+            None => ServerConfig {
+                enable_opa: false,
+                opa_url: None,
+            },
+        }
+    } else {
+        ServerConfig {
+            enable_opa: false,
+            opa_url: None,
+        }
+    };
+
     let mut appstate = AppState {
         locale: locale.to_string(),
         path_config: config.to_string(),
@@ -244,6 +255,9 @@ fn main() {
         format_out: output_format.clone(),
     };
 
+    debug!("App Config : {:?}", server_config);
+    debug!("Server Config : {:?}", appstate);
+
     match matches.subcommand_name() {
         Some("init") => subcommand_init(&appstate),
         Some("shell") => subcommand_shell(&appstate),
@@ -252,7 +266,7 @@ fn main() {
         Some("transform") => subcommand_transform(&appstate),
         Some("validate") => subcommand_validate(&appstate),
         Some("build") => subcommand_build(&appstate),
-        Some("serve") => subcommand_serve(&appstate),
+        Some("serve") => subcommand_serve(&appstate, &server_config),
         None => println!("No subcommand was used"),
         _ => println!("Some other subcommand was used"),
     }
@@ -269,7 +283,7 @@ fn subcommand_shell(appstate: &AppState) -> () {
     match load_model(&appstate.path_in) {
         Ok(mut model) => {
             shell::shell(&mut model, &appstate);
-        },
+        }
         Err(err) => {
             error!("subcommand_shell : {:?}", err);
         }
@@ -306,16 +320,16 @@ fn subcommand_transform(appstate: &AppState) -> () {
             Ok(model) => model,
             Err(err) => {
                 error!("transform error: {:?}", err);
-                return ()
+                return ();
             }
-        }
+        },
         Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("transform error: {:?}", err);
-                return ()
+                return ();
             }
-        }
+        },
     };
 
     match appstate.format_out {
@@ -327,8 +341,7 @@ fn subcommand_transform(appstate: &AppState) -> () {
 fn subcommand_build(appstate: &AppState) -> () {
     info!(
         "build: model in '{}', building assets in '{}'",
-        appstate.path_in,
-        appstate.path_out
+        appstate.path_in, appstate.path_out
     );
 
     if let Ok(mut model) = load_model(&appstate.path_in) {
@@ -339,18 +352,14 @@ fn subcommand_build(appstate: &AppState) -> () {
     } else {
         error!("subcommand_build : ERROR");
     }
-
 }
 
-fn subcommand_serve(appstate: &AppState) -> () {
-    info!(
-        "serve: model in '{}'",
-        appstate.path_in
-    );
+fn subcommand_serve(appstate: &AppState, config: &ServerConfig) -> () {
+    info!("serve: model in '{}'", appstate.path_in);
 
     // let model = load_model(&appstate.path_in);
 
-    server::serve(&appstate.path_in);
+    server::serve(&appstate.path_in, &config);
 }
 
 fn subcommand_import(appstate: &mut AppState) -> () {
@@ -361,27 +370,26 @@ fn subcommand_import(appstate: &mut AppState) -> () {
             Ok(model) => model,
             Err(err) => {
                 error!("import error: {:?}", err);
-                return ()
+                return ();
             }
-        }
+        },
         Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("import error: {:?}", err);
-                return ()
+                return ();
             }
-        }
+        },
     };
 
     let _ = gears::util::fs::model_to_fs(
         &model.as_locale(&appstate.locale).unwrap(),
         &appstate.path_in,
-    ).unwrap();
-
+    )
+    .unwrap();
 }
 
 fn subcommand_export(appstate: &mut AppState) -> () {
-
     let model = gears::util::fs::model_from_fs(&appstate.path_in).unwrap();
 
     match appstate.format_out {
