@@ -1,10 +1,10 @@
-use gears::structure::model::ModelDocument;
-use gears::structure::common::ModelLoadError;
-use futures::Future;
 use actix::prelude::*;
+use futures::Future;
 use gears;
+use gears::structure::common::ModelLoadError;
+use gears::structure::model::ModelDocument;
 
-use super::model_executor::{ModelStore, InputError};
+use super::model_executor::{InputError, ModelStore};
 
 #[derive(Clone)]
 pub struct SQLliteModelStore {
@@ -42,4 +42,3 @@ impl ModelStore for SQLliteModelStore {
         unimplemented!()
     }
 }
-

@@ -14,6 +14,7 @@ build = "build.rs"
 
 [dependencies]
 gears = "0.1.6"
+actix-web-middleware-opa = { version = "0.1.1", default-features = false }
 log = "0.4"
 env_logger = "0.6"
 rustyline = "2.1"
@@ -34,6 +35,8 @@ features = [ "suggestions", "color", "wrap_help" ]
 [build-dependencies]
 peg = { version = "0.5" }
 
+# [replace]
+# actix-web-middleware-opa = { path = "/home/michiel/dev/github/actix-web-middleware-opa" }
 # [replace]
 # "gears:0.1.6" = { path = "/home/michiel/dev/gears-project/gears-core-rust" }
 # "gears:0.1.6" = { git = 'https://github.com/gears-project/gears-core-rust' }

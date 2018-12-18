@@ -1,6 +1,6 @@
+use gears;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
-use gears;
 
 use gears::structure::model::ModelDocument;
 
@@ -84,7 +84,6 @@ impl<'a> ShellSession<'a> {
             }
         }
     }
-
 }
 
 pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {

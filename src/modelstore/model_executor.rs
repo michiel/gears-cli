@@ -14,4 +14,3 @@ pub trait ModelStore {
     fn update(&self, json: &str) -> Result<ModelDocument, InputError>;
     fn delete(&self, json: &str) -> Result<(), InputError>;
 }
-

@@ -1,15 +1,15 @@
-use gears::structure::model::ModelDocument;
-use gears::structure::common::ModelLoadError;
-use futures::Future;
 use actix::prelude::*;
+use futures::Future;
 use gears;
+use gears::structure::common::ModelLoadError;
+use gears::structure::model::ModelDocument;
 
-use super::model_executor::{ModelStore, InputError};
+use super::model_executor::{InputError, ModelStore};
 
 fn load_model(path: &str) -> Result<ModelDocument, InputError> {
     match gears::util::fs::model_from_fs(path) {
         Ok(model) => Ok(model),
-        Err(_) => Err(InputError::IOError)
+        Err(_) => Err(InputError::IOError),
     }
 }
 
@@ -21,12 +21,10 @@ pub struct FileSystemModelStore {
 impl FileSystemModelStore {
     pub fn new(path: &str) -> Result<Self, ModelLoadError> {
         match load_model(&path) {
-            Ok(_) => {
-                Ok(FileSystemModelStore {
-                    root: path.to_owned()
-                })
-            },
-            Err(err) => Err(ModelLoadError::BadStructure("Unable to init".to_owned()))
+            Ok(_) => Ok(FileSystemModelStore {
+                root: path.to_owned(),
+            }),
+            Err(err) => Err(ModelLoadError::BadStructure("Unable to init".to_owned())),
         }
     }
 }
@@ -35,7 +33,7 @@ impl ModelStore for FileSystemModelStore {
     fn list(&self) -> Result<Vec<ModelDocument>, InputError> {
         match load_model(&self.root) {
             Ok(res) => Ok(vec![res]),
-            Err(_) => Err(InputError::IOError)
+            Err(_) => Err(InputError::IOError),
         }
     }
 
@@ -50,33 +48,29 @@ impl ModelStore for FileSystemModelStore {
             Err(err) => {
                 let msg = format!("{:?}", err);
                 Err(InputError::BadFormat(msg))
-            },
+            }
         }
     }
 
     fn create(&self, json: &str) -> Result<ModelDocument, InputError> {
         info!("create: in directory {}", self.root);
         match gears::structure::model::ModelDocument::from_json(&json) {
-            Ok(model) => {
-                match gears::util::fs::model_to_fs(&model, &self.root) {
-                    Ok(_) => load_model(&self.root),
-                    Err(_) => Err(InputError::IOError),
-                }
-            }
-            Err(err) => Err(InputError::BadFormat(format!("{:?}", err)))
+            Ok(model) => match gears::util::fs::model_to_fs(&model, &self.root) {
+                Ok(_) => load_model(&self.root),
+                Err(_) => Err(InputError::IOError),
+            },
+            Err(err) => Err(InputError::BadFormat(format!("{:?}", err))),
         }
     }
 
     fn update(&self, json: &str) -> Result<ModelDocument, InputError> {
         info!("update: in directory {}", self.root);
         match gears::structure::model::ModelDocument::from_json(&json) {
-            Ok(model) => {
-                match gears::util::fs::model_to_fs(&model, &self.root) {
-                    Ok(_) => load_model(&self.root),
-                    Err(_) => Err(InputError::IOError),
-                }
-            }
-            Err(err) => Err(InputError::BadFormat(format!("{:?}", err)))
+            Ok(model) => match gears::util::fs::model_to_fs(&model, &self.root) {
+                Ok(_) => load_model(&self.root),
+                Err(_) => Err(InputError::IOError),
+            },
+            Err(err) => Err(InputError::BadFormat(format!("{:?}", err))),
         }
     }
 
@@ -112,7 +106,7 @@ impl Handler<ModelStoreList> for FileSystemModelStore {
 }
 
 struct ModelStoreGet<'a> {
-    id: &'a str
+    id: &'a str,
 }
 
 impl<'a> Message for ModelStoreGet<'a> {
@@ -142,7 +136,7 @@ impl Handler<ModelStoreNew> for FileSystemModelStore {
 }
 
 struct ModelStoreCreate<'a> {
-    json: &'a str
+    json: &'a str,
 }
 
 impl<'a> Message for ModelStoreCreate<'a> {
@@ -158,7 +152,7 @@ impl<'a> Handler<ModelStoreCreate<'a>> for FileSystemModelStore {
 }
 
 struct ModelStoreDelete<'a> {
-    id: &'a str
+    id: &'a str,
 }
 
 impl<'a> Message for ModelStoreDelete<'a> {
@@ -172,4 +166,3 @@ impl<'a> Handler<ModelStoreDelete<'a>> for FileSystemModelStore {
         self.delete(msg.id)
     }
 }
-
