@@ -15,10 +15,11 @@ extern crate futures;
 extern crate uuid;
 
 extern crate actix_web_middleware_opa;
+extern crate jsonapi;
 
 use clap::{App, Arg, SubCommand};
-use gears::structure::common::ModelLoadError;
-use gears::structure::model::ModelDocument;
+use gears::structure::common::{ModelLoadError, DocumentNature, DocumentFileSystemLoadable};
+use gears::structure::gxmodel::GxModel;
 use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
@@ -34,15 +35,8 @@ mod modelstore;
 mod server;
 mod shell;
 
-fn load_model(path: &str) -> Result<ModelDocument, String> {
-    let model = gears::util::fs::model_from_fs(path).unwrap();
-    match gears::util::fs::model_from_fs(path) {
-        Ok(model) => Ok(model),
-        Err(err) => {
-            error!("load_model : {:?}", err);
-            Err(format!("load_model : {:?}", err))
-        }
-    }
+fn load_model(path: &str) -> Result<GxModel, ModelLoadError> {
+    GxModel::load_from_filesystem(path)
 }
 
 fn read_stdin() -> String {
@@ -294,7 +288,7 @@ fn subcommand_validate(appstate: &AppState) -> () {
     info!("validate: model in '{}'", appstate.path_in);
     if let Ok(model) = load_model(&appstate.path_in) {
         let path_sep = ";".to_owned();
-        let errors = gears::validation::common::validate_model(&model);
+        let errors = gears::validation::common::validate_gxmodel(&model);
 
         if errors.len() > 0 {
             for error in &errors {
@@ -316,14 +310,14 @@ fn subcommand_transform(appstate: &AppState) -> () {
     let buffer = read_stdin();
 
     let model = match appstate.format_in {
-        Format::YAML => match gears::structure::model::ModelDocument::from_yaml(&buffer) {
+        Format::YAML => match gears::structure::gxmodel::GxModel::from_yaml(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("transform error: {:?}", err);
                 return ();
             }
         },
-        Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
+        Format::JSON => match gears::structure::gxmodel::GxModel::from_json(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("transform error: {:?}", err);
@@ -345,10 +339,10 @@ fn subcommand_build(appstate: &AppState) -> () {
     );
 
     if let Ok(mut model) = load_model(&appstate.path_in) {
-        model.pad_all_translations();
-        let model_locale = model.as_locale(&appstate.locale).unwrap();
+        // model.pad_all_translations();
+        // let model_locale = model.as_locale(&appstate.locale).unwrap();
 
-        let _ = gears::util::fs::build_to_react_app(&model_locale, &appstate.path_out);
+        let _ = gears::util::fs::build_to_react_app(&model, &appstate.path_out);
     } else {
         error!("subcommand_build : ERROR");
     }
@@ -366,14 +360,14 @@ fn subcommand_import(appstate: &mut AppState) -> () {
     let buffer = read_stdin();
 
     let model = match appstate.format_in {
-        Format::YAML => match gears::structure::model::ModelDocument::from_yaml(&buffer) {
+        Format::YAML => match gears::structure::gxmodel::GxModel::from_yaml(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("import error: {:?}", err);
                 return ();
             }
         },
-        Format::JSON => match gears::structure::model::ModelDocument::from_json(&buffer) {
+        Format::JSON => match gears::structure::gxmodel::GxModel::from_json(&buffer) {
             Ok(model) => model,
             Err(err) => {
                 error!("import error: {:?}", err);
@@ -382,18 +376,15 @@ fn subcommand_import(appstate: &mut AppState) -> () {
         },
     };
 
-    let _ = gears::util::fs::model_to_fs(
-        &model.as_locale(&appstate.locale).unwrap(),
-        &appstate.path_in,
-    )
+    let _ = &model.write_to_filesystem( &appstate.path_in)
     .unwrap();
 }
 
 fn subcommand_export(appstate: &mut AppState) -> () {
-    let model = gears::util::fs::model_from_fs(&appstate.path_in).unwrap();
+    let model = GxModel::load_from_filesystem(&appstate.path_in).unwrap();
 
     match appstate.format_out {
-        Format::YAML => println!("{}", model.as_locale(&appstate.locale).unwrap().to_yaml()),
-        Format::JSON => println!("{}", model.as_locale(&appstate.locale).unwrap().to_json()),
+        Format::YAML => println!("{}", model.to_yaml()),
+        Format::JSON => println!("{}", model.to_json()),
     }
 }

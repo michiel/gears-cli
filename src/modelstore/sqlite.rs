@@ -2,9 +2,9 @@ use actix::prelude::*;
 use futures::Future;
 use gears;
 use gears::structure::common::ModelLoadError;
-use gears::structure::model::ModelDocument;
+use gears::structure::gxmodel::GxModel;
 
-use super::model_executor::{InputError, ModelStore};
+use super::model_executor::ModelStore;
 
 #[derive(Clone)]
 pub struct SQLliteModelStore {
@@ -18,27 +18,27 @@ impl SQLliteModelStore {
 }
 
 impl ModelStore for SQLliteModelStore {
-    fn list(&self) -> Result<Vec<ModelDocument>, InputError> {
+    fn list(&self) -> Result<Vec<GxModel>, ModelLoadError> {
         unimplemented!()
     }
 
-    fn get(&self, _id: &str) -> Result<ModelDocument, InputError> {
+    fn get(&self, _id: &str) -> Result<GxModel, ModelLoadError> {
         unimplemented!()
     }
 
-    fn new(&self) -> Result<ModelDocument, InputError> {
+    fn new(&self) -> Result<GxModel, ModelLoadError> {
         unimplemented!()
     }
 
-    fn create(&self, json: &str) -> Result<ModelDocument, InputError> {
+    fn create(&self, json: &str) -> Result<GxModel, ModelLoadError> {
         unimplemented!()
     }
 
-    fn update(&self, json: &str) -> Result<ModelDocument, InputError> {
+    fn update(&self, json: &str) -> Result<GxModel, ModelLoadError> {
         unimplemented!()
     }
 
-    fn delete(&self, json: &str) -> Result<(), InputError> {
+    fn delete(&self, json: &str) -> Result<(), ModelLoadError> {
         unimplemented!()
     }
 }
