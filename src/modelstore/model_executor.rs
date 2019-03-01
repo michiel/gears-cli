@@ -1,16 +1,11 @@
-use gears::structure::model::ModelDocument;
-
-#[derive(Debug)]
-pub enum InputError {
-    IOError,
-    BadFormat(String),
-}
+use gears::structure::common::ModelLoadError;
+use gears::structure::gxmodel::GxModel;
 
 pub trait ModelStore {
-    fn list(&self) -> Result<Vec<ModelDocument>, InputError>;
-    fn get(&self, id: &str) -> Result<ModelDocument, InputError>;
-    fn new(&self) -> Result<ModelDocument, InputError>;
-    fn create(&self, json: &str) -> Result<ModelDocument, InputError>;
-    fn update(&self, json: &str) -> Result<ModelDocument, InputError>;
-    fn delete(&self, json: &str) -> Result<(), InputError>;
+    fn list(&self) -> Result<Vec<GxModel>, ModelLoadError>;
+    fn get(&self, id: &str) -> Result<GxModel, ModelLoadError>;
+    fn new(&self) -> Result<GxModel, ModelLoadError>;
+    fn create(&self, json: &str) -> Result<GxModel, ModelLoadError>;
+    fn update(&self, json: &str) -> Result<GxModel, ModelLoadError>;
+    fn delete(&self, json: &str) -> Result<(), ModelLoadError>;
 }

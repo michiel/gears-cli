@@ -4,7 +4,6 @@
 
 use gears::structure::model::ModelDocument;
 
-use actix::prelude::*;
 use actix_web::{
     http::Method, http::StatusCode, middleware, pred, server, App, AsyncResponder, FutureResponse,
     HttpMessage, HttpRequest, HttpResponse, Json,
@@ -16,6 +15,9 @@ use bytes::Bytes;
 use modelstore::filesystem::FileSystemModelStore;
 use modelstore::model_executor::ModelStore;
 use std::str;
+
+use jsonapi::model::JsonApiModel;
+use jsonapi::api::JsonApiDocument;
 
 use app::ServerConfig;
 
@@ -94,24 +96,24 @@ pub fn serve(path: &str, config: &ServerConfig) {
                         // r.method(Method::DELETE).with(get_page)
                         })
                     })
+                    */
                     .nested("/{model_id}/xflows", |xflow_scope| {
                         xflow_scope
                         .resource("", |r| {
-                            r.method(Method::GET).f(get_xflows);
-                            // r.method(Method::POST).f(get_page);
+                            // r.method(Method::GET).f(get_xflows);
+                            // r.method(Method::POST).f(create_page);
                         })
-                        .resource("/{xflow_id}", |r| {
-                        r.method(Method::GET).f(get_xflow);
+                        // .resource("/{xflow_id}", |r| {
+                        // r.method(Method::GET).f(get_xflow);
                         // r.method(Method::PUT).with(get_page);
                         // r.method(Method::DELETE).with(get_page)
-                        })
+                        // })
                     })
-                    */
                 })
                 .resource("/", |r| r.f(jsonapi_index))
                 .resource("", |r| r.f(jsonapi_index))
                 .default_resource(|r| {
-                    r.method(Method::GET).f(p404);
+                    r.method(Method::GET).f(http_not_found);
                     r.route()
                         .filter(pred::Not(pred::Get()))
                         .f(|_req| HttpResponse::MethodNotAllowed());
@@ -145,7 +147,7 @@ pub fn serve(path: &str, config: &ServerConfig) {
                 .resource("/", |r| r.f(jsonapi_index))
                 .resource("", |r| r.f(jsonapi_index))
                 .default_resource(|r| {
-                    r.method(Method::GET).f(p404);
+                    r.method(Method::GET).f(http_not_found);
                     r.route()
                         .filter(pred::Not(pred::Get()))
                         .f(|_req| HttpResponse::MethodNotAllowed());
@@ -169,39 +171,46 @@ fn jsonapi_index(_req: &HttpRequest<AppState>) -> HttpResponse {
         .finish()
 }
 
-fn p404(_req: &HttpRequest<AppState>) -> HttpResponse {
+fn http_not_found(_req: &HttpRequest<AppState>) -> HttpResponse {
     HttpResponse::build(StatusCode::NOT_FOUND).finish()
 }
+fn http_ok_doc<T>(doc: &T) -> HttpResponse where T : JsonApiModel {
+    HttpResponse::build(StatusCode::OK)
+        .content_type(CONTENT_TYPE_JSON)
+        .body(format!("{}", serde_json::to_string(&doc.to_jsonapi_document()).unwrap()))
+}
+
+fn http_bad_request(msg : &str) -> HttpResponse {
+    HttpResponse::build(StatusCode::BAD_REQUEST)
+        .content_type(CONTENT_TYPE_JSON)
+        .body(format!("{:?}", msg))
+}
+
 //
 // Models
 
 fn get_models(req: &HttpRequest<AppState>) -> HttpResponse {
     match &req.state().modelstore.get(&"") {
-        Ok(res) => HttpResponse::build(StatusCode::OK)
-            .content_type(CONTENT_TYPE_JSON)
-            .body(format!("[{}]", res.to_json_compact())),
-        Err(_) => HttpResponse::build(StatusCode::NOT_FOUND).finish(),
+        Ok(res) => http_ok_doc(res),
+        Err(_) => http_not_found(&req)
     }
 }
 
 fn get_model(req: &HttpRequest<AppState>) -> HttpResponse {
     let model_id = &req.match_info()["model_id"];
     match &req.state().modelstore.get(&model_id) {
-        Ok(res) => HttpResponse::build(StatusCode::OK)
-            .content_type(CONTENT_TYPE_JSON)
-            .body(format!("{}", res.to_json_compact())),
-        Err(_) => HttpResponse::build(StatusCode::NOT_FOUND).finish(),
+        Ok(res) => http_ok_doc(res),
+        Err(_) => http_not_found(&req)
     }
 }
 
-fn create_model(model: Json<ModelDocument>) -> HttpResponse {
-    HttpResponse::build(StatusCode::OK)
-        .content_type(CONTENT_TYPE_JSON)
-        .body(format!("{}", model.to_json_compact()))
+fn create_model(doc: Json<JsonApiDocument>) -> HttpResponse {
+    let obj = &doc.into_inner();
+    let model = ModelDocument::from_jsonapi_document(&obj).unwrap();
+    http_ok_doc(&model)
 }
 
 fn update_model(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
-    // format!("{}", model.to_json());
 
     let req = req.clone();
     req.body()
@@ -211,17 +220,11 @@ fn update_model(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
                 Ok(body) => {
                     // println!("==== BODY ==== {:?}", body);
                     match &req.state().modelstore.update(&body) {
-                        Ok(res) => Ok(HttpResponse::build(StatusCode::OK)
-                            .content_type(CONTENT_TYPE_JSON)
-                            .body(format!("{}", res.to_json_compact()))),
-                        Err(err) => Ok(HttpResponse::build(StatusCode::BAD_REQUEST)
-                            .content_type(CONTENT_TYPE_JSON)
-                            .body(format!("{:?}", err))),
+                        Ok(res) => Ok(http_ok_doc(res)),
+                        Err(err) => Ok(http_bad_request(&format!("{:?}", err))),
                     }
                 }
-                Err(_) => Ok(HttpResponse::build(StatusCode::BAD_REQUEST)
-                    .content_type(CONTENT_TYPE_JSON)
-                    .body(format!("Invalid JSON"))),
+                Err(_) => Ok(http_bad_request(&"Invalid JSON"))
             }
         })
         .responder()

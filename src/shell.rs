@@ -2,7 +2,8 @@ use gears;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use gears::structure::model::ModelDocument;
+use gears::structure::common::DocumentFileSystemLoadable;
+use gears::structure::gxmodel::GxModel;
 
 use app::AppState;
 
@@ -24,7 +25,7 @@ static PROMPT: &'static str = ">> ";
 
 struct ShellSession<'a> {
     appstate: &'a AppState,
-    model: &'a mut ModelDocument,
+    model: &'a mut GxModel,
 }
 
 impl<'a> ShellSession<'a> {
@@ -70,9 +71,8 @@ impl<'a> ShellSession<'a> {
     }
 
     pub fn run_command_sync(&self) -> Result<(), String> {
-        match gears::util::fs::model_to_fs(
-            &self.model.as_locale(&self.appstate.locale).unwrap(),
-            &self.appstate.path_in,
+        match &self.model.write_to_filesystem(
+            &self.appstate.path_in
         ) {
             Ok(_) => {
                 println!("<< sync OK");
@@ -86,7 +86,7 @@ impl<'a> ShellSession<'a> {
     }
 }
 
-pub fn shell(model: &mut ModelDocument, appstate: &AppState) -> () {
+pub fn shell(model: &mut GxModel, appstate: &AppState) -> () {
     println!("<< Running gears-shell");
     let mut shell_session = ShellSession {
         appstate: appstate,
