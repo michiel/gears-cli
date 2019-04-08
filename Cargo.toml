@@ -29,7 +29,7 @@ uuid = { version = "0.7", features = ["serde", "v4"] }
 jsonapi = "*"
 
 [dependencies.clap]
-version = "~2.32.0"
+version = "~2.33.0"
 default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
 
