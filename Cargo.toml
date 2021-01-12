@@ -25,7 +25,7 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 bytes = { version = "0.4", features = ["serde"] }
-uuid = { version = "0.7", features = ["serde", "v4"] }
+uuid = { version = "0.8", features = ["serde", "v4"] }
 jsonapi = "*"
 
 [dependencies.clap]
