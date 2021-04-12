@@ -34,7 +34,7 @@ default-features = false
 features = [ "suggestions", "color", "wrap_help" ]
 
 [build-dependencies]
-peg = { version = "0.5" }
+peg = { version = "0.7" }
 
 [replace]
 # actix-web-middleware-opa = { path = "/home/michiel/dev/github/actix-web-middleware-opa" }
